@@ -1,0 +1,8 @@
+{
+  "extensions": [
+    "naco-siren.gradle-language"
+  ],
+  "settings": {
+    "editor.tabSize": 2
+  }
+}

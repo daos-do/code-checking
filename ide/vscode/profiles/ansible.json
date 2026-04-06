@@ -1,0 +1,12 @@
+{
+  "extensions": [
+    "redhat.ansible"
+  ],
+  "settings": {
+    "files.associations": {
+      "**/group_vars/**/vars": "ansible",
+      "**/group_vars/**/gvars": "ansible",
+      "**/host_vars/**/vars": "ansible"
+    }
+  }
+}
