@@ -10,19 +10,13 @@ $requiredPaths = @(
     'LICENSE',
     'bin/run-checks.sh',
     'checks/pre-commit_d',
-    'ide/vscode/settings-baseline.json',
-    'ide/vscode/extensions-baseline.json'
+    'ide/reference/recommended_settings.yml'
 )
 
 foreach ($path in $requiredPaths) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "Missing required path: $path"
     }
-}
-
-Write-Host "[check] validating JSON syntax"
-Get-ChildItem -Path 'ide/vscode' -Filter '*.json' -Recurse | ForEach-Object {
-    $null = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
 }
 
 Write-Host "All checks passed."

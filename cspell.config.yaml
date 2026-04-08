@@ -1,0 +1,18 @@
+version: '0.2'
+language: en
+useGitignore: true
+words: []
+flagWords: []
+dictionaryDefinitions:
+  - name: project-words
+    path: ./vscode-project-words.txt
+    addWords: true
+    scope: workspace
+
+dictionaries:
+  - project-words
+
+ignorePaths:
+  - .git/**
+  - .venv/**
+  - node_modules/**

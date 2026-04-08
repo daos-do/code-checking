@@ -10,8 +10,7 @@ required_paths=(
   "LICENSE"
   "bin/run-checks.sh"
   "checks/pre-commit_d"
-  "ide/vscode/settings-baseline.json"
-  "ide/vscode/extensions-baseline.json"
+  "ide/reference/recommended_settings.yml"
 )
 
 for p in "${required_paths[@]}"; do
@@ -25,10 +24,5 @@ echo "[check] validating shell script syntax"
 while IFS= read -r -d '' file; do
   bash -n "$file"
 done < <(find bin checks -type f -name '*.sh' -print0)
-
-echo "[check] validating JSON syntax"
-while IFS= read -r -d '' file; do
-  python3 -m json.tool "$file" >/dev/null
-done < <(find ide/vscode -type f -name '*.json' -print0)
 
 echo "All checks passed."

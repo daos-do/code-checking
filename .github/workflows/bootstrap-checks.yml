@@ -13,5 +13,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Linux setup prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+
       - name: Run bootstrap checks
         run: bash bin/run-checks.sh
+
+      - name: Smoke test Python setup engine
+        run: |
+          mkdir -p tmp-ci-python-workspace
+          cd tmp-ci-python-workspace
+          python3 ../bin/ide-workspace-setup.py
+          python3 ../bin/ide-workspace-setup.py --apply
+          test -f .vscode/settings.json
+          test -f .vscode/extensions.json
+          test -f cspell.config.yaml
+          test -f vscode-project-words.txt
+
+      - name: Smoke test shell wrapper
+        run: |
+          mkdir -p tmp-ci-shell-workspace
+          cd tmp-ci-shell-workspace
+          bash ../bin/ide-workspace-setup.sh
+
+  validate-windows-bootstrap:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Windows bootstrap prerequisites
+        shell: pwsh
+        run: .\bin\bootstrap-windows-dev.ps1 -ValidateOnly
+
+      - name: Smoke test PowerShell wrapper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path tmp-ci-windows-workspace | Out-Null
+          Push-Location tmp-ci-windows-workspace
+          try {
+            & ..\bin\ide-workspace-setup.ps1
+            & ..\bin\ide-workspace-setup.ps1 -Apply
+            if (-not (Test-Path .vscode\settings.json)) { throw 'Missing .vscode/settings.json' }
+            if (-not (Test-Path .vscode\extensions.json)) { throw 'Missing .vscode/extensions.json' }
+            if (-not (Test-Path cspell.config.yaml)) { throw 'Missing cspell.config.yaml' }
+            if (-not (Test-Path vscode-project-words.txt)) { throw 'Missing vscode-project-words.txt' }
+          }
+          finally {
+            Pop-Location
+          }

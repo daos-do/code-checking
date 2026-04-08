@@ -2,6 +2,10 @@
 
 Shared linting, check, and IDE bootstrap assets for this and other repositories.
 
+This repository exists to help the team implement coding practices they have
+agreed on. Content is added here only after team agreement, typically through
+the PR review process.
+
 This repository is designed to be consumed as a git submodule.
 Consumer repositories add it as a top-level `code_checking/` directory and
 keep local wrapper scripts and `.github/workflows` in their own tree.
@@ -10,7 +14,7 @@ keep local wrapper scripts and `.github/workflows` in their own tree.
 
 - Provide reusable, generic check scripts across repositories
 - Keep check behavior consistent for CLI, pre-commit, and GitHub Actions
-- Provide IDE baseline guidance and profile overlays
+- Provide IDE baseline guidance and a single YAML customization input
 - Reduce duplicate checker logic and drift between repositories
 
 ## Non-Goals
@@ -25,6 +29,15 @@ keep local wrapper scripts and `.github/workflows` in their own tree.
 - Visibility: Public
 - Primary maintainer group: DAOS-DO/Developers
 
+## Local Scratch Files
+
+- Repository-local scratch files should use a `zzz-` prefix.
+- Scratch files are for temporary planning notes, draft commit messages, and
+  similar local work in progress.
+- Scratch files must not be committed to the repository.
+- Root-level `zzz-*` files are ignored through the tracked `.gitignore` so
+  `git status` stays focused on commit candidates.
+
 ## Checker Behavior Policy
 
 - Checks are non-mutating by default.
@@ -35,6 +48,12 @@ keep local wrapper scripts and `.github/workflows` in their own tree.
 ## Submodule Usage
 
 Add this repository as a top-level submodule in a consumer repository:
+
+- Commands in this README that reference `code_checking/` assume the submodule
+  directory is named `code_checking`.
+- If your submodule uses a different directory name, replace that path prefix
+  in commands.
+- Run submodule-integration commands from the consumer repository root.
 
 ```bash
 git submodule add https://github.com/daos-do/code-checking code_checking
@@ -57,17 +76,30 @@ Consumer repositories keep:
 Shared scripts in this repository are invoked by those local wrappers and
 workflows.
 
-## Initial Consumer Targets
+Maintenance planning notes are documented in
+[docs/maintenance.md](docs/maintenance.md).
 
-- `ansible-lab`
-- `system-pipeline-lib`
+## IDE Customization
 
-## Planned Content Areas
+- Run commands from the base directory of the consumer repository clone.
+- Use your chosen submodule directory name as the path prefix for scripts and
+  reference files in this repository.
+- If you want local overrides, keep an optional user-maintained file at
+  `./local_ide_settings.yml` in the directory where setup is run.
+- `./local_ide_settings.yml` is intentionally untracked and belongs in
+  `.gitignore`; it should not be committed.
+- Run the bootstrap script for your platform first, then run
+  `ide-workspace-setup` in dry-run mode before `--apply`.
+- If you are developing this repository directly rather than using it as a
+  submodule, drop the `code_checking/` path prefix from commands.
 
-- Shell and PowerShell check runners
-- Check script library (ansible-lint, yamllint, shellcheck, markdownlint,
-  groovylint, codespell)
-- IDE setup baselines and profile overlays for VS Code
+Detailed usage is in [docs/usage.md](docs/usage.md).
+
+Recommended VS Code extensions and platform-specific tool requirements are
+documented in [docs/vscode-extensions.md](docs/vscode-extensions.md).
+
+Configuration model details are in
+[docs/ide-customization.md](docs/ide-customization.md).
 
 ## Cross-Repo Reuse
 
