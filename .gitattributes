@@ -1,0 +1,2 @@
+# Enforce LF endings for tracked text files to prevent CRLF regressions.
+* text=auto eol=lf

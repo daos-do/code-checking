@@ -1,0 +1,109 @@
+---
+# Master IDE customization reference.
+#
+# Copy to: ./local_ide_settings.yml
+# Edit there for local preferences.
+#
+# IDE-specific customization.
+# Add future IDE sections here (for example, ide.intellij) if teams choose to
+# maintain translations from VS Code concepts.
+ide:
+  # VS Code workspace customization.
+  vscode:
+    # Workspace settings merged on top of repository baseline defaults.
+    settings:
+      editor:
+        # Default tab size (can be overridden per language or use EditorConfig).
+        tabSize: 4
+        # Insert spaces when Tab is pressed; overridden per language where
+        # literal tabs are required (e.g. makefiles).
+        insertSpaces: true
+        # Don't auto-detect indentation from file content; honour these settings.
+        detectIndentation: false
+        # Visual column guides at the two standard terminal widths.
+        # Each entry is a mapping with a required "column" key and an
+        # optional "color" key (CSS hex color string, e.g. "#FF000066" for
+        # semi-transparent red).  Colors can also be set interactively via
+        # the VS Code settings UI color picker.
+        rulers:
+          # default standard terminal width, also best for quickly reading
+          # without wrapping or horizontal scrolling.
+          - column: 80
+            # color: "#00FF00"
+          # wider standard terminal width / default width for line printers
+          # Many listing programs use this format to annotate 80-column code.
+          - column: 132
+            # color: "#FFFF00"
+        # Workaround for shellcheck extension not clearing fixed problems
+        # after they are repaired.  Need to save a file to trigger a
+        # shellcheck re-run and clear the fixed diagnostics
+        formatOnSave: false
+      files:
+        # Default to LF line endings to avoid CRLF-related portability issues.
+        eol: "\n"
+        # Force known files specifications that vscode may not automatically
+        # recognize as having the correct language mode.
+        associations:
+          # Plaintext files without extensions
+          LICENSE: plaintext
+          NOTICE: plaintext
+          "**/CODEOWNERS": plaintext
+          # Ansible files
+          "**/group_vars/**/vars": ansible
+          "**/group_vars/**/gvars": ansible
+          "**/host_vars/**/vars": ansible
+
+    # Language-specific settings (groovy/gradle indent matches groovylint
+    # and shellcheck defaults of 4 spaces)
+    "[groovy]":
+      editor:
+        tabSize: 4
+
+    # Makefiles require literal tab characters for recipe lines.
+    "[makefile]":
+      editor:
+        insertSpaces: false
+
+    # Extension recommendations merged from baseline and local preferences.
+    extensions:
+      recommendations:
+        # Core IDE extensions
+        - github.copilot-chat
+        - ms-python.python
+        - ms-vscode.powershell
+        - ms-vscode.makefile-tools
+        # EditorConfig behavior is defined in .editorconfig; install a
+        # trusted extension manually if policy allows.
+        # Linting and formatting
+        - redhat.ansible
+        - redhat.vscode-yaml
+        - timonwong.shellcheck
+        - nicolasvuillamy.vscode-groovy-lint
+        - streetsidesoftware.code-spell-checker
+        # Documentation
+        - davidanson.vscode-markdownlint
+        - bierner.markdown-preview-github-styles
+        # Remote access
+        - ms-vscode-remote.remote-ssh
+
+# Reserved for future local lint profile wiring.
+linting:
+  profiles: []
+
+# Local pre-commit behavior.
+preCommit:
+  # selected | none | all
+  mode: selected
+
+# Local setup self-healing for Python package prerequisites.
+# Note: pyyaml auto-install via pip is Windows-only; on non-Windows hosts,
+# prefer installing distro packages first.
+setup:
+  python:
+    packages:
+      - pyyaml
+
+# Local policy for non-certified package sources.
+packageSources:
+  allowUncertifiedSources: false
+  allowedSources: []

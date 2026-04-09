@@ -1,0 +1,27 @@
+# Project-specific words accepted by cspell
+# Add one word per line
+Anson
+choco
+codespellrc
+davidanson
+debugpy
+filemode
+groovylint
+gvars
+isort
+LASTEXITCODE
+longpaths
+makefiles
+MSYSTEM
+nicolasvuillamy
+Pipenv
+pyenv
+pylintrc
+pyproject
+pyyaml
+safecrlf
+timonwong
+venv
+virtualenv
+Vuillamy
+winget
