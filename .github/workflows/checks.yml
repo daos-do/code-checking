@@ -1,0 +1,33 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  basic-source-checks:
+    name: Basic Source checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Block tracked .code-checking-ref
+        run: bash checks/guard-code-checking-ref.sh --target-root .
+
+      - name: Verify executable modes
+        run: bash checks/verify-executable-modes.sh --target-root .
+
+      - name: Run linters on changed files
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: bash bin/run-linters.sh

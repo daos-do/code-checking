@@ -353,7 +353,6 @@ def copy_linter_configs(target_root, repo_root, apply):
     """Copy linter config files from repo_root to target_root if missing."""
     # List of common linter/formatter config files to copy
     linter_files = [
-        ".shellcheckrc",
         ".pylintrc",
         ".flake8",
         ".yamllint",

@@ -1,11 +1,14 @@
 # Project-specific words accepted by cspell
 # Add one word per line
+ACMR
 Anson
 choco
 codespellrc
 davidanson
 debugpy
+esac
 filemode
+gitfs
 groovylint
 gvars
 isort
@@ -14,6 +17,7 @@ longpaths
 makefiles
 MSYSTEM
 nicolasvuillamy
+nonblank
 Pipenv
 pyenv
 pylintrc
@@ -21,6 +25,7 @@ pyproject
 pyyaml
 safecrlf
 timonwong
+unmatch
 venv
 virtualenv
 Vuillamy

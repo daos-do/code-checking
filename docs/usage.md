@@ -18,11 +18,47 @@ pwsh -File ./bin/run-checks.ps1
 bash bin/setup-dev.sh
 ```
 
+This script:
+
+- Checks for pre-commit and shellcheck prerequisites
+- Attempts to install missing tools via package managers first
+- Initializes pre-commit hooks in your repository
+
+For pre-commit hook usage, you need the pre-commit package.
+On Linux, `setup-dev.sh` uses distro package managers only (apt/dnf/yum),
+with no pip fallback.
+On macOS, it prefers Homebrew and can fall back to user-scoped pip installs.
+
+For Linux/macOS manual install, prefer your system package manager:
+
+```bash
+# macOS (Homebrew)
+brew install pre-commit
+
+# Debian/Ubuntu
+sudo apt-get install pre-commit
+```
+
+Avoid `sudo pip install` on Linux because it can conflict with distro-managed
+Python packages.
+
+For linter execution, ensure linter executables are installed on PATH.
+The linter runner performs a preflight check and fails early with install hints
+when required tools are missing.
+
+Current requirements:
+
+- `pre-commit` for commit-hook integration
+- `shellcheck` for shell linting
+
 ## Local setup (PowerShell)
 
 ```powershell
 pwsh -File ./bin/setup-dev.ps1
 ```
+
+This script checks for pre-commit and shellcheck prerequisites.
+For Windows, run `bootstrap-windows-dev.ps1` first to install pre-commit and other tools.
 
 ## Local scratch files
 

@@ -1,4 +1,4 @@
-name: bootstrap-checks
+name: bootstrap-validation
 
 on:
   pull_request:

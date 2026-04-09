@@ -113,6 +113,45 @@ function Install-PyYaml {
     }
 }
 
+function Install-PreCommit {
+    param(
+        [switch]$ValidateOnly
+    )
+
+    if ($ValidateOnly) {
+        Write-Host '[bootstrap-windows-dev] validate-only: skipping pre-commit install'
+        return
+    }
+
+    if (Get-Command pre-commit -ErrorAction SilentlyContinue) {
+        Write-Host '[bootstrap-windows-dev] pre-commit already available'
+        return
+    }
+
+    $pythonCmd = $null
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        $pythonCmd = @('py', '-3')
+    }
+    elseif (Get-Command python -ErrorAction SilentlyContinue) {
+        $pythonCmd = @('python')
+    }
+
+    if (-not $pythonCmd) {
+        throw '[bootstrap-windows-dev] Python not available to install pre-commit'
+    }
+
+    Write-Host '[bootstrap-windows-dev] installing Python package: pre-commit'
+    if ($pythonCmd[0] -eq 'py') {
+        & $pythonCmd[0] $pythonCmd[1] -m pip install pre-commit
+    }
+    else {
+        & $pythonCmd[0] -m pip install pre-commit
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "[bootstrap-windows-dev] failed to install pre-commit (exit $LASTEXITCODE)"
+    }
+}
+
 function Set-GitGlobalConfig {
     param(
         [switch]$ValidateOnly
@@ -187,6 +226,8 @@ if (-not $pythonInfo) {
 Write-Host "[bootstrap-windows-dev] python: $($pythonInfo.Version)"
 
 Install-PyYaml -ValidateOnly:$ValidateOnly
+
+Install-PreCommit -ValidateOnly:$ValidateOnly
 
 if (-not $ValidateOnly) {
     Write-Host '[bootstrap-windows-dev] install/check complete'

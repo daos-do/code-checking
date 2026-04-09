@@ -76,6 +76,93 @@ Consumer repositories keep:
 Shared scripts in this repository are invoked by those local wrappers and
 workflows.
 
+Local developer setup for pre-commit hooks is optional and separate from CI:
+
+- In this repository: run `./bin/setup-dev.sh` (or
+  `pwsh -File ./bin/setup-dev.ps1`) if you want local pre-commit hooks.
+- In a consumer repository: run
+  `./code_checking/bin/setup-dev.sh` (or PowerShell equivalent) from the
+  consumer repo root for local hook setup. If `.pre-commit-config.yaml`
+  is missing, setup bootstraps a baseline config that uses
+  `./code_checking` hook entrypoints.
+- Running linters in GitHub Actions does not require `setup-dev`.
+
+`setup-dev` does not create or modify consumer `.github/workflows` files.
+
+To bootstrap or refresh consumer-repository integration after adding the
+submodule, updating it, or changing `.code-checking-ref`, run:
+
+Linux/macOS:
+
+```bash
+./code_checking/bin/sync-consumer.sh
+```
+
+PowerShell equivalent:
+
+```powershell
+pwsh -File .\code_checking\bin\sync-consumer.ps1
+```
+
+This command syncs the `code_checking` ref, writes the recommended GitHub
+workflow (`pull_request` trigger only, to avoid duplicate `push` + PR runs),
+bootstraps or refreshes pre-commit hooks, and updates the consumer `README.md`
+managed section. It also seeds baseline `.gitignore`,
+`cspell.config.yaml`, and `vscode-project-words.txt` in the consumer root when
+those files are missing. Running `sync-consumer` means you do not need
+to run `setup-github-workflow.sh` separately.
+
+To skip README updates for a specific run:
+
+```bash
+./code_checking/bin/sync-consumer.sh --skip-readme
+```
+
+For an initial consumer-repo integration commit after running
+`sync-consumer`, stage and review these files:
+
+The code_checking was previously added and changes to the branch it
+references will be ignored so no need to add it again if modified.
+
+```bash
+git add .github/workflows/     # May need to add newly added files instead.
+git add .gitignore             # seeded if missing
+git add .gitmodules
+git add .pre-commit-config.yaml   # if setup-dev was run
+git add README.md
+git add cspell.config.yaml     # seeded if missing
+git add vscode-project-words.txt  # seeded if missing
+```
+
+Do not stage `.code-checking-ref` for normal integration commits. An
+intentional validation PR may track it temporarily when testing a
+`code_checking` PR ref.
+
+To install or update only the recommended GitHub workflow without a full
+submodule sync, run:
+
+Linux/macOS:
+
+```bash
+./code_checking/bin/setup-github-workflow.sh --apply
+```
+
+PowerShell equivalent:
+
+```powershell
+bash .\code_checking\bin\setup-github-workflow.sh --apply
+```
+
+This keeps workflow ownership in the consumer repo while providing a shared
+script to sync the recommended workflow after submodule add/update.
+
+Shared linter entrypoints are available at `bin/run-linters.sh` and
+`bin/run-linters.ps1`.
+They resolve the library root from the script path and treat the current
+working directory as the target repository root by default, which allows the
+same command pattern to work both in this repository and from a consumer
+repository that vendors this repository as a submodule.
+
 Maintenance planning notes are documented in
 [docs/maintenance.md](docs/maintenance.md).
 
@@ -98,6 +185,12 @@ Detailed usage is in [docs/usage.md](docs/usage.md).
 Recommended VS Code extensions and platform-specific tool requirements are
 documented in [docs/vscode-extensions.md](docs/vscode-extensions.md).
 
+For shared spell-check dictionary updates in a consumer repository, use the
+workflow in [docs/vscode-cspell.md](docs/vscode-cspell.md). The preferred VS
+Code action is `Add to Workspace Dictionary`, which updates the repo-managed
+`vscode-project-words.txt` file instead of user settings or
+`.vscode/settings.json`.
+
 Configuration model details are in
 [docs/ide-customization.md](docs/ide-customization.md).
 
@@ -111,11 +204,20 @@ belong in local wrappers or config files, not in shared checker logic.
 
 1. Issue found in a consumer repository.
 2. Fix submitted to `code_checking` via PR.
-3. After merge, consumer repository updates its submodule reference via PR.
-4. Consumer CI validates integration.
+3. Consumer validates from GitHub Actions using default `main` tip or an
+  optional temporary ref override.
+4. After merge, remove the temporary override (if used) and re-run CI.
+
+For detailed instructions on testing fixes before merge and updating after
+merge, see [docs/integration.md](docs/integration.md)
+under "Validating Fixes Before PR Merge".
+
+For required-status-check setup that blocks merges when `.code-checking-ref`
+is tracked, see
+[docs/integration.md](docs/integration.md#repository-rules-setup-github-web-ui).
 
 ## Status
 
-Initial repository bootstrap.
-Content will be populated as checks and IDE assets are migrated from
-consumer repositories.
+Initial repository bootstrap in progress.
+Check scripts are in the progress of populated as checks and IDE assets
+are migrated from consumer repositories.

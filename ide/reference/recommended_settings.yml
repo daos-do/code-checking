@@ -38,6 +38,15 @@ ide:
         # after they are repaired.  Need to save a file to trigger a
         # shellcheck re-run and clear the fixed diagnostics
         formatOnSave: false
+      shellcheck:
+        # Keep diagnostics out of Copilot transient read-only session buffers.
+        # ignoreFileSchemes includes vscode-chat-session so diagnostics are not
+        # produced from Copilot chat transient read-only buffers.
+        ignoreFileSchemes:
+          - git
+          - gitfs
+          - output
+          - vscode-chat-session
       files:
         # Default to LF line endings to avoid CRLF-related portability issues.
         eol: "\n"
@@ -102,6 +111,7 @@ setup:
   python:
     packages:
       - pyyaml
+      - pre-commit
 
 # Local policy for non-certified package sources.
 packageSources:

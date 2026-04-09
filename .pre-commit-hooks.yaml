@@ -1,0 +1,29 @@
+- id: forbid-code-checking-ref
+  name: forbid tracked .code-checking-ref
+  description: Blocks commits that track the temporary override file
+  entry: checks/guard-code-checking-ref.sh --target-root .
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [commit]
+  require_serial: true
+
+- id: verify-executable-modes
+  name: verify executable modes
+  description: Enforces +x mode for tracked shebang shell scripts
+  entry: checks/verify-executable-modes.sh --target-root .
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [commit]
+  require_serial: true
+
+- id: shellcheck
+  name: shellcheck
+  description: Shell script linter
+  entry: bin/run-linters.sh --mode changed
+  language: script
+  pass_filenames: false
+  types: [shell]
+  stages: [commit]
+  require_serial: false
