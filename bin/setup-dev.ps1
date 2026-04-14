@@ -2,8 +2,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$libraryRoot = (Resolve-Path -LiteralPath (Join-Path $scriptDir '..')).Path
+$scriptDir = Split-Path -Parent $PSCommandPath
+$libraryRoot = Split-Path -Parent $scriptDir
 $targetRoot = (Get-Location).Path
 
 for ($index = 0; $index -lt $args.Count; $index++) {
@@ -14,6 +14,7 @@ for ($index = 0; $index -lt $args.Count; $index++) {
         }
         '--help' {
             Write-Host 'Usage: setup-dev.ps1 [--target-root PATH]'
+            Write-Host 'Delegates to setup-dev.sh using WSL bash or Git Bash.'
             exit 0
         }
         default {
@@ -24,114 +25,36 @@ for ($index = 0; $index -lt $args.Count; $index++) {
 
 $targetRoot = (Resolve-Path -LiteralPath $targetRoot).Path
 
-function Get-CodeCheckingPath {
-    if ($libraryRoot -eq $targetRoot) {
-        return '.'
-    }
-
-    if ($libraryRoot.StartsWith($targetRoot + [System.IO.Path]::DirectorySeparatorChar)) {
-        return $libraryRoot.Substring($targetRoot.Length + 1) -replace '\\', '/'
-    }
-
-    $defaultPath = Join-Path $targetRoot 'code_checking'
-    if (Test-Path -LiteralPath $defaultPath) {
-        return 'code_checking'
-    }
-
-    throw "[setup-dev] no .pre-commit-config.yaml found and unable to locate code_checking path from $targetRoot"
-}
-
-function Set-PreCommitConfig {
-    $configPath = Join-Path $targetRoot '.pre-commit-config.yaml'
-    if (Test-Path -LiteralPath $configPath) {
-        return
-    }
-
-    $codeCheckingPath = Get-CodeCheckingPath
-    $hookPrefix = if ($codeCheckingPath -eq '.') { '.' } else { "./$codeCheckingPath" }
-    $content = @"
-repos:
-    - repo: local
-        hooks:
-            - id: forbid-code-checking-ref
-                name: forbid tracked .code-checking-ref
-                entry: $hookPrefix/checks/guard-code-checking-ref.sh --target-root .
-                language: script
-                pass_filenames: false
-                always_run: true
-                stages: [commit]
-                require_serial: true
-            - id: verify-executable-modes
-                name: verify executable modes
-                entry: $hookPrefix/checks/verify-executable-modes.sh --target-root .
-                language: script
-                pass_filenames: false
-                always_run: true
-                stages: [commit]
-                require_serial: true
-            - id: shellcheck
-                name: shellcheck
-                entry: $hookPrefix/bin/run-linters.sh --mode changed --target-root .
-                language: script
-                pass_filenames: false
-                types: [shell]
-                stages: [commit]
-                require_serial: false
-"@
-            Set-Content -LiteralPath $configPath -Value $content -Encoding ascii
-            Write-Host "[setup-dev] created .pre-commit-config.yaml using $hookPrefix hooks"
-}
-
-function Test-CommandExists {
-    param([string]$Command)
-    try {
-        Get-Command $Command -ErrorAction SilentlyContinue | Out-Null
+function Test-BashRuntime {
+    if (Get-Command wsl -ErrorAction SilentlyContinue) {
         return $true
     }
-    catch {
-        return $false
+    if (Get-Command bash -ErrorAction SilentlyContinue) {
+        return $true
     }
+    return $false
 }
 
-Write-Host "[setup-dev] checking pre-commit hooks prerequisites"
-
-# Check for pre-commit
-if (-not (Test-CommandExists pre-commit)) {
-    Write-Host "[setup-dev] pre-commit not found"
-    Write-Host "[setup-dev] run bootstrap-windows-dev.ps1 first to install pre-commit"
+if (-not (Test-BashRuntime)) {
+    Write-Error '[setup-dev] no bash runtime found (WSL or Git Bash required)'
+    Write-Error '[setup-dev] install one of:'
+    Write-Error '  - WSL with a Linux distribution'
+    Write-Error '  - Git for Windows (Git Bash)'
+    Write-Error '[setup-dev] then rerun setup-dev.ps1'
+    Write-Error '[setup-dev] for details, see docs/usage.md (Local setup sections)'
     exit 1
 }
-Write-Host "[setup-dev] [ok] pre-commit found"
 
-# Check for shellcheck
-if (-not (Test-CommandExists shellcheck)) {
-    Write-Host "[setup-dev] [missing] shellcheck not found"
-    Write-Host "[setup-dev] note: shellcheck is required for pre-commit shell linting"
-    Write-Host "[setup-dev] install it manually or via winget: winget install shellcheck"
-}
-else {
-    Write-Host "[setup-dev] [ok] shellcheck found"
+$setupScript = Join-Path $scriptDir 'setup-dev.sh'
+if (-not (Test-Path -LiteralPath $setupScript -PathType Leaf)) {
+    throw "Missing script: $setupScript"
 }
 
-Set-PreCommitConfig
-
-# Initialize pre-commit hooks only when target repo is configured for pre-commit
-if (-not (Test-Path -LiteralPath (Join-Path $targetRoot '.git'))) {
-    Write-Host "[setup-dev] not a git repository; skipping pre-commit hook initialization"
+Push-Location $targetRoot
+try {
+    . (Join-Path $libraryRoot 'checks/invoke-bash.ps1')
+    Invoke-BashScript -ScriptPath $setupScript -ScriptArgs @('--target-root', $targetRoot)
 }
-elseif (-not (Test-Path -LiteralPath (Join-Path $targetRoot '.pre-commit-config.yaml'))) {
-    Write-Host "[setup-dev] no .pre-commit-config.yaml in target root; skipping hook initialization"
+finally {
+    Pop-Location
 }
-else {
-    Write-Host "[setup-dev] initializing pre-commit hooks..."
-    Push-Location $targetRoot
-    try {
-        & pre-commit install --install-hooks
-        Write-Host "[setup-dev] pre-commit hooks initialized"
-    }
-    finally {
-        Pop-Location
-    }
-}
-
-Write-Host "[setup-dev] setup complete"

@@ -58,6 +58,12 @@ ide:
           LICENSE: plaintext
           NOTICE: plaintext
           "**/CODEOWNERS": plaintext
+          # Config files (prevent false markdown detection)
+          ".editorconfig": plaintext
+          ".shellcheckrc": plaintext
+          # YAML config files
+          ".ansible-lint": yaml
+          ".yamllint": yaml
           # Ansible files
           "**/group_vars/**/vars": ansible
           "**/group_vars/**/gvars": ansible

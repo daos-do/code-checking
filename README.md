@@ -41,9 +41,14 @@ keep local wrapper scripts and `.github/workflows` in their own tree.
 ## Checker Behavior Policy
 
 - Checks are non-mutating by default.
-- Commit-hook checks must report failures, not rewrite source files.
-- Auto-fix behavior, if provided, must be explicit opt-in commands and must
-  not run automatically inside commit hooks.
+- Commit-hook checks report failures without rewriting source files.
+- Auto-fix behavior is available via explicit `--fix` opt-in for both local
+  manual runs and pre-commit hooks, and is disabled by default.
+- Auto-fix must never run automatically inside commit hooks; it requires
+  explicit opt-in through hook configuration or command-line arguments.
+
+See [docs/linters.md](docs/linters.md#auto-fix-mode) for auto-fix usage and
+configuration details.
 
 ## Submodule Usage
 
@@ -162,6 +167,11 @@ They resolve the library root from the script path and treat the current
 working directory as the target repository root by default, which allows the
 same command pattern to work both in this repository and from a consumer
 repository that vendors this repository as a submodule.
+
+Selected linters support `--fix` for automatic issue correction. Use
+`./bin/run-linters.sh --fix` for manual runs, or configure pre-commit hooks
+with `args: [--fix]` to enable auto-fix on commit. See
+[docs/linters.md](docs/linters.md#auto-fix-mode) for details.
 
 Maintenance planning notes are documented in
 [docs/maintenance.md](docs/maintenance.md).

@@ -11,7 +11,7 @@
 
 - id: verify-executable-modes
   name: verify executable modes
-  description: Enforces +x mode for tracked shebang shell scripts
+  description: Enforces +x mode for tracked shebang shell scripts (supports --fix to auto-apply)
   entry: checks/verify-executable-modes.sh --target-root .
   language: script
   pass_filenames: false
@@ -20,11 +20,15 @@
   require_serial: true
 
 - id: shellcheck
-  name: shellcheck
-  description: Shell script linter
+  name: basic source linters
+  description: Runs selected changed-file linters (supports --fix for applicable checks)
   entry: bin/run-linters.sh --mode changed
   language: script
   pass_filenames: false
-  types: [shell]
+  always_run: true
   stages: [commit]
   require_serial: false
+
+# NOTE: To enable auto-fix for selected checks in your .pre-commit-config.yaml, add:
+#   args: [--fix]
+# See https://github.com/daos-do/code-checking/blob/main/docs/linters.md#auto-fix-mode

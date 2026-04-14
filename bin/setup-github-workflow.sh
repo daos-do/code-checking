@@ -9,7 +9,8 @@ MODE="check"
 
 usage() {
   cat <<'EOF'
-Usage: setup-github-workflow.sh [--target-root PATH] [--submodule-path PATH] [--apply]
+Usage: setup-github-workflow.sh [--target-root PATH] \
+                                [--submodule-path PATH] [--apply]
 
 Checks or writes the recommended GitHub workflow that runs shared linters from
 this repository when used as a submodule.
@@ -69,16 +70,15 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-
       - name: Resolve code_checking ref
         run: |
           REF="origin/main"
           if [ -f .code-checking-ref ]; then
-            REF="$(grep -v '^[[:space:]]*#' .code-checking-ref | sed '/^[[:space:]]*$/d' | head -n 1)"
+            REF="$(
+              grep -v '^[[:space:]]*#' .code-checking-ref \
+                | sed '/^[[:space:]]*$/d' \
+                | head -n 1
+            )"
           fi
           if [ -z "${REF}" ]; then
             REF="origin/main"
@@ -101,13 +101,27 @@ jobs:
           git -C ./__CODE_CHECKING_PATH__ checkout FETCH_HEAD
           echo "[workflow] using code_checking ref: ${REF}"
 
+      - name: Install linter tools
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          bash ./__CODE_CHECKING_PATH__/checks/install-linter-tools.sh \
+            --library-root ./__CODE_CHECKING_PATH__ \
+            --target-root . \
+            --mode changed \
+            --base-ref "${GITHUB_BASE_REF:-}"
+
       - name: Block tracked .code-checking-ref
         id: guard_code_checking_ref
         continue-on-error: true
-        run: bash ./__CODE_CHECKING_PATH__/checks/guard-code-checking-ref.sh --target-root .
+        run: |
+          bash ./__CODE_CHECKING_PATH__/checks/guard-code-checking-ref.sh \
+            --target-root .
 
       - name: Verify executable modes
-        run: bash ./__CODE_CHECKING_PATH__/checks/verify-executable-modes.sh --target-root .
+        run: |
+          bash ./__CODE_CHECKING_PATH__/checks/verify-executable-modes.sh \
+            --target-root .
 
       - name: Run linters on changed files
         env:
@@ -115,10 +129,13 @@ jobs:
         run: bash ./__CODE_CHECKING_PATH__/bin/run-linters.sh
 
       - name: Fail if .code-checking-ref is tracked
-        if: ${{ always() && steps.guard_code_checking_ref.outcome == 'failure' }}
+        if: >-
+          ${{ always() &&
+              steps.guard_code_checking_ref.outcome == 'failure' }}
         run: |
           echo "[workflow] .code-checking-ref was tracked in this change" >&2
-          echo "[workflow] keeping the final job status failed after running the remaining checks" >&2
+          echo "[workflow] keeping the final job status failed after" >&2
+          echo "[workflow] running the remaining checks" >&2
           exit 1
 
 EOF
@@ -127,7 +144,8 @@ EXPECTED_CONTENT="${TEMPLATE//__CODE_CHECKING_PATH__/${SUBMODULE_PATH}}"
 
 if [[ "${MODE}" == "check" ]]; then
   if [[ ! -f "${WORKFLOW_PATH}" ]]; then
-    echo "[setup-github-workflow] missing workflow: ${WORKFLOW_RELATIVE_PATH}" >&2
+    echo "[setup-github-workflow] missing workflow:" \
+      "${WORKFLOW_RELATIVE_PATH}" >&2
     echo "[setup-github-workflow] run with --apply to create/update it" >&2
     exit 1
   fi

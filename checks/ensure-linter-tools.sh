@@ -34,6 +34,13 @@ for linter in "$@"; do
         missing_tools=1
       fi
       ;;
+    codespell)
+      if ! command -v codespell >/dev/null 2>&1; then
+        echo "[linters] missing required tool for '${linter}': codespell" >&2
+        print_install_hint codespell
+        missing_tools=1
+      fi
+      ;;
     *)
       # Unknown linters are handled by the main runner.
       ;;

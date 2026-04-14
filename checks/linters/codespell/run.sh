@@ -37,6 +37,11 @@ if [[ -z "${LIB_ROOT}" || -z "${TARGET_ROOT}" ]]; then
   exit 2
 fi
 
+if ! command -v codespell >/dev/null 2>&1; then
+  echo "codespell is required but was not found in PATH" >&2
+  exit 127
+fi
+
 LIB_ROOT="$(cd "${LIB_ROOT}" && pwd)"
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
 LIB_RELATIVE_PATH=""
@@ -44,7 +49,7 @@ if [[ "${LIB_ROOT}" == "${TARGET_ROOT}"/* ]]; then
   LIB_RELATIVE_PATH="${LIB_ROOT#"${TARGET_ROOT}/"}"
 fi
 
-get_changed_files() {
+get_candidate_files() {
   if [[ "${MODE}" == "full" ]]; then
     (cd "${TARGET_ROOT}" && find . -type f -print | sed 's#^./##')
     return
@@ -69,36 +74,30 @@ get_changed_files() {
   } | awk 'NF && !seen[$0]++'
 }
 
-shellcheck_needed=0
-codespell_needed=0
-text_hygiene_needed=0
-filename_portability_needed=0
+files_to_check=()
 while IFS= read -r file_path; do
   [[ -z "${file_path}" ]] && continue
   if [[ -n "${LIB_RELATIVE_PATH}" && "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
     continue
   fi
 
-  codespell_needed=1
-  text_hygiene_needed=1
-  filename_portability_needed=1
+  absolute_path="${TARGET_ROOT}/${file_path}"
+  if [[ ! -f "${absolute_path}" ]]; then
+    continue
+  fi
 
-  case "${file_path}" in
-    *.sh)
-      shellcheck_needed=1
-      ;;
-  esac
-done < <(get_changed_files)
+  # Skip binaries to keep codespell focused on textual content.
+  if ! LC_ALL=C grep -Iq . "${absolute_path}"; then
+    continue
+  fi
 
-if [[ ${shellcheck_needed} -eq 1 ]]; then
-  printf '%s\n' 'shellcheck'
+  files_to_check+=("${absolute_path}")
+done < <(get_candidate_files)
+
+if [[ ${#files_to_check[@]} -eq 0 ]]; then
+  echo "[codespell] no text files to lint"
+  exit 0
 fi
-if [[ ${codespell_needed} -eq 1 ]]; then
-  printf '%s\n' 'codespell'
-fi
-if [[ ${text_hygiene_needed} -eq 1 ]]; then
-  printf '%s\n' 'text-hygiene'
-fi
-if [[ ${filename_portability_needed} -eq 1 ]]; then
-  printf '%s\n' 'filename-portability'
-fi
+
+echo "[codespell] linting ${#files_to_check[@]} file(s)"
+codespell --check-filenames --quiet-level 2 -- "${files_to_check[@]}"

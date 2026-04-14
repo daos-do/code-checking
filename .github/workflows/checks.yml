@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck
+          sudo apt-get install -y shellcheck codespell
 
       - name: Block tracked .code-checking-ref
         run: bash checks/guard-code-checking-ref.sh --target-root .

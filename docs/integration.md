@@ -127,6 +127,107 @@ usually remain visible in `git status` as an untracked file. The pre-commit
 guard hook blocks accidental commits of it. An intentional validation PR may
 track it temporarily when testing a `code_checking` PR ref.
 
+## Consuming Submodule Force-Push Updates
+
+There are two distinct cases: updating to a force-pushed code_checking PR
+branch while testing it locally, and updating the submodule to a new main
+tip after a merge.
+
+### Case 1: Testing a Force-Pushed code_checking PR
+
+This is the case where you have `.code-checking-ref` set to a PR branch
+and that PR was force-pushed. `git submodule update --remote` is not
+sufficient here because it does not know to reset to the new force-pushed
+commits; you need to fetch and hard-reset.
+
+1. Find the branch name in `.code-checking-ref`.
+
+  ```bash
+  cat .code-checking-ref
+  # example output: sre-3706-codespell
+  ```
+
+1. Fetch the updated branch from the submodule remote.
+
+  ```bash
+  git -C code_checking fetch origin sre-3706-codespell
+  ```
+
+1. Reset the submodule checkout to the fetched branch tip.
+
+  ```bash
+  git -C code_checking reset --hard origin/sre-3706-codespell
+  ```
+
+1. Verify git status.
+
+  ```bash
+  git status
+  # modified:   code_checking (new commits)  <-- do not stage this
+  ```
+
+  The submodule will show as modified (new commits), but do not stage or
+  commit it. Keep the submodule pointer at the commit already recorded in
+  the consumer PR.
+
+1. If the code_checking PR changed linter/tool requirements, regenerate the
+  consumer workflow.
+
+  ```bash
+  ./code_checking/bin/setup-github-workflow.sh --apply
+  ```
+
+1. Stage and commit only the changed workflow file.
+
+  ```bash
+  git add .github/workflows/basic-source-checks.yml
+  git commit --amend --no-verify
+  ```
+
+Use `--no-verify` only if your consumer PR intentionally tracks
+`.code-checking-ref` and the guard hook fires on it.
+The `--no-verify` bypass is acceptable here because the guard hook is
+protecting against accidental commits; the PR is intentional.
+
+### Case 2: Updating the Submodule to a New main Tip
+
+Use this after a code_checking PR has merged to main and you want to bring
+the consumer repository up to date.
+
+1. Fetch the latest main from the submodule remote:
+
+  ```bash
+  git -C code_checking fetch origin main
+  ```
+
+1. Update the submodule:
+
+  ```bash
+  git submodule update --remote code_checking
+  ```
+
+1. Regenerate the consumer workflow if tool requirements changed:
+
+  ```bash
+  ./code_checking/bin/setup-github-workflow.sh --apply
+  ```
+
+1. Stage and commit both the submodule pointer and any workflow changes:
+
+  ```bash
+  git add code_checking
+  git add .github/workflows/basic-source-checks.yml
+  git commit -m "Update code_checking submodule to latest main"
+  ```
+
+### Why git submodule update --remote Is Not Enough After Force-Push
+
+`git submodule update --remote` updates the submodule to the tip of the
+tracked branch, but only from what has already been fetched locally.
+After a force-push, the local remote-tracking ref still points to the old
+commit until you fetch. Only an explicit fetch followed by a hard reset
+moves the local checkout to the new commit.
+
 ## Scope
 
 This document currently defines workflow behavior for GitHub Actions only.

@@ -19,10 +19,12 @@ repos:
         stages: [commit]
         require_serial: true
       - id: shellcheck
-        name: shellcheck
+        name: basic source linters
         entry: bin/run-linters.sh --mode changed --target-root .
         language: script
         pass_filenames: false
-        types: [shell]
+        always_run: true
         stages: [commit]
         require_serial: false
+        # Optional: Enable auto-fix for applicable linters
+        # args: [--fix]

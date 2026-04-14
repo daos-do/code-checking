@@ -50,6 +50,7 @@ Current requirements:
 
 - `pre-commit` for commit-hook integration
 - `shellcheck` for shell linting
+- `codespell` for spelling checks in changed text paths
 
 ## Local setup (PowerShell)
 
@@ -57,8 +58,14 @@ Current requirements:
 pwsh -File ./bin/setup-dev.ps1
 ```
 
-This script checks for pre-commit and shellcheck prerequisites.
-For Windows, run `bootstrap-windows-dev.ps1` first to install pre-commit and other tools.
+This script is a PowerShell preflight wrapper that delegates to
+`setup-dev.sh` through WSL bash (preferred) or Git Bash.
+
+If neither runtime is present, it exits with install guidance and references
+this document.
+
+For Windows, run `bootstrap-windows-dev.ps1` first to install pre-commit and
+other tools.
 
 ## Local scratch files
 
@@ -148,7 +155,8 @@ but the ide-workspace-setup.py script only knows about what settings are
 in the recommended settings YAML file.
 
 ```bash
-cp ./code_checking/ide/reference/recommended_settings.yml ./local_ide_settings.yml
+cp ./code_checking/ide/reference/recommended_settings.yml \
+   ./local_ide_settings.yml
 ```
 
 Then edit `./local_ide_settings.yml` and adjust:
@@ -160,7 +168,8 @@ Then edit `./local_ide_settings.yml` and adjust:
 Setup command names:
 
 - Windows: `python .\code_checking\bin\ide-workspace-setup.py` (dry run)
-- Non-Windows shells: `bash ./code_checking/bin/ide-workspace-setup.sh` (dry run)
+- Non-Windows shells:
+  `bash ./code_checking/bin/ide-workspace-setup.sh` (dry run)
 - Add `--apply` to perform a live write
 
 Examples:
