@@ -1,3 +1,4 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -24,31 +25,31 @@ for ($index = 0; $index -lt $args.Count; $index++) {
 $targetRoot = (Resolve-Path -LiteralPath $targetRoot).Path
 
 function Get-CodeCheckingPath {
-        if ($libraryRoot -eq $targetRoot) {
-                return '.'
-        }
+    if ($libraryRoot -eq $targetRoot) {
+        return '.'
+    }
 
-        if ($libraryRoot.StartsWith($targetRoot + [IO.Path]::DirectorySeparatorChar)) {
-                return $libraryRoot.Substring($targetRoot.Length + 1) -replace '\\', '/'
-        }
+    if ($libraryRoot.StartsWith($targetRoot + [System.IO.Path]::DirectorySeparatorChar)) {
+        return $libraryRoot.Substring($targetRoot.Length + 1) -replace '\\', '/'
+    }
 
-        $defaultPath = Join-Path $targetRoot 'code_checking'
-        if (Test-Path -LiteralPath $defaultPath) {
-                return 'code_checking'
-        }
+    $defaultPath = Join-Path $targetRoot 'code_checking'
+    if (Test-Path -LiteralPath $defaultPath) {
+        return 'code_checking'
+    }
 
-        throw "[setup-dev] no .pre-commit-config.yaml found and unable to locate code_checking path from $targetRoot"
+    throw "[setup-dev] no .pre-commit-config.yaml found and unable to locate code_checking path from $targetRoot"
 }
 
-function Ensure-PreCommitConfig {
-        $configPath = Join-Path $targetRoot '.pre-commit-config.yaml'
-        if (Test-Path -LiteralPath $configPath) {
-                return
-        }
+function Set-PreCommitConfig {
+    $configPath = Join-Path $targetRoot '.pre-commit-config.yaml'
+    if (Test-Path -LiteralPath $configPath) {
+        return
+    }
 
-        $codeCheckingPath = Get-CodeCheckingPath
-        $hookPrefix = if ($codeCheckingPath -eq '.') { '.' } else { "./$codeCheckingPath" }
-        $content = @"
+    $codeCheckingPath = Get-CodeCheckingPath
+    $hookPrefix = if ($codeCheckingPath -eq '.') { '.' } else { "./$codeCheckingPath" }
+    $content = @"
 repos:
     - repo: local
         hooks:
@@ -77,8 +78,8 @@ repos:
                 stages: [commit]
                 require_serial: false
 "@
-        Set-Content -LiteralPath $configPath -Value $content -Encoding ascii
-        Write-Host "[setup-dev] created .pre-commit-config.yaml using $hookPrefix hooks"
+            Set-Content -LiteralPath $configPath -Value $content -Encoding ascii
+            Write-Host "[setup-dev] created .pre-commit-config.yaml using $hookPrefix hooks"
 }
 
 function Test-CommandExists {
@@ -100,19 +101,19 @@ if (-not (Test-CommandExists pre-commit)) {
     Write-Host "[setup-dev] run bootstrap-windows-dev.ps1 first to install pre-commit"
     exit 1
 }
-Write-Host "[setup-dev] ✓ pre-commit found"
+Write-Host "[setup-dev] [ok] pre-commit found"
 
 # Check for shellcheck
 if (-not (Test-CommandExists shellcheck)) {
-    Write-Host "[setup-dev] ⚠ shellcheck not found"
+    Write-Host "[setup-dev] [missing] shellcheck not found"
     Write-Host "[setup-dev] note: shellcheck is required for pre-commit shell linting"
     Write-Host "[setup-dev] install it manually or via winget: winget install shellcheck"
 }
 else {
-    Write-Host "[setup-dev] ✓ shellcheck found"
+    Write-Host "[setup-dev] [ok] shellcheck found"
 }
 
-Ensure-PreCommitConfig
+Set-PreCommitConfig
 
 # Initialize pre-commit hooks only when target repo is configured for pre-commit
 if (-not (Test-Path -LiteralPath (Join-Path $targetRoot '.git'))) {

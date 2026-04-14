@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

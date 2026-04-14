@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
 TARGET_ROOT=""

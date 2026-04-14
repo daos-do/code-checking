@@ -1,3 +1,4 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 

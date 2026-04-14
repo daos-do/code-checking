@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 import argparse
 import importlib
 import json
@@ -185,6 +186,23 @@ def normalize_rulers(rulers):
             col = entry["column"]
             by_column[col] = entry              # dict always beats plain int
     return [by_column[col] for col in sorted(by_column)]
+
+
+def canonicalize_shellcheck_settings(settings_obj):
+    """Keep one canonical shellcheck key style.
+
+    VS Code accepts both dotted and nested key styles. Preserve dotted keys
+    as canonical output and collapse duplicate nested values created by merge.
+    """
+    nested_key = "shellcheck"
+
+    nested = settings_obj.get(nested_key)
+    if isinstance(nested, dict):
+        for sub_key, sub_value in list(nested.items()):
+            dotted_key = f"shellcheck.{sub_key}"
+            if dotted_key not in settings_obj:
+                settings_obj[dotted_key] = sub_value
+        settings_obj.pop(nested_key, None)
 
 
 def find_code_cli():
@@ -408,7 +426,7 @@ def main(argv):
 
     # Start from any existing workspace settings so nothing is lost.
     # Merge order (each step can add/override the previous):
-    #   existing .vscode/settings.json  →  repo baseline  →  local YAML
+    #   existing .vscode/settings.json -> repo baseline -> local YAML
     existing_settings = {}
     if os.path.exists(out_settings):
         try:
@@ -429,6 +447,8 @@ def main(argv):
     rulers = merged_settings.get("editor", {}).get("rulers")
     if isinstance(rulers, list):
         merged_settings["editor"]["rulers"] = normalize_rulers(rulers)
+
+    canonicalize_shellcheck_settings(merged_settings)
 
     # Build extension list: existing + baseline + selected YAML config,
     # deduped and order-preserving.

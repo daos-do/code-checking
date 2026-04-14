@@ -1,3 +1,4 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 - id: forbid-code-checking-ref
   name: forbid tracked .code-checking-ref
   description: Blocks commits that track the temporary override file

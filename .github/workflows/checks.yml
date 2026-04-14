@@ -1,10 +1,8 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 name: checks
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
 
 jobs:
   basic-source-checks:

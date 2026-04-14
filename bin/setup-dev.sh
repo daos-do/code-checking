@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -109,11 +110,11 @@ check_and_install_tool() {
   local tool_name="$1"
 
   if command -v "$tool_name" >/dev/null 2>&1; then
-    echo "[setup-dev] ✓ $tool_name found"
+    echo "[setup-dev] [ok] $tool_name found"
     return 0
   fi
 
-  echo "[setup-dev] ✗ $tool_name not found, attempting to install..."
+  echo "[setup-dev] [missing] $tool_name not found, attempting to install..."
 
   case "$(uname -s)" in
     Darwin)
