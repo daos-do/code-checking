@@ -93,7 +93,7 @@ fi
 
 echo "[linters] selected linters: ${REQUIRED_LINTERS[*]}"
 
-"${LIB_ROOT}/checks/ensure-linter-tools.sh" "${REQUIRED_LINTERS[@]}"
+"${LIB_ROOT}/checks/install-linter-tools.sh" "${detect_args[@]}"
 
 run_args_common=(
   --library-root "${LIB_ROOT}"

@@ -126,7 +126,6 @@ When adding new linters, use this installation policy:
 
 For each new linter integration PR, include:
 
-- tool mapping update in `checks/ensure-linter-tools.sh`
 - setup/install guidance update in `bin/setup-dev.sh` and `docs/usage.md`
 - preflight failure hints that match the chosen package manager convention
 
@@ -162,12 +161,6 @@ Add a dispatch case that calls the per-linter runner.
 Implement the actual file filtering and tool invocation in `run.sh`.
 Keep `run.ps1` as a thin wrapper that delegates to `run.sh` via
 `checks/invoke-bash.ps1`.
-
-1. Tool preflight
-
-- `checks/ensure-linter-tools.sh`
-
-Add PATH checks and install hints for the required executable.
 
 1. CI environment
 
@@ -359,8 +352,6 @@ having it happen by default.
   (or `origin/main` by default).
 - `checks/detect-linters.(sh|ps1)`:
   changed-file analysis and linter selection.
-- `checks/ensure-linter-tools.sh`:
-  centralized executable preflight check for selected linters.
 - `checks/linters/<linter>/run.(sh|ps1)`:
   per-linter executors that apply file filtering and invoke the tool.
 - `.pre-commit-hooks.yaml`:
