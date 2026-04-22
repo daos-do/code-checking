@@ -25,64 +25,24 @@ PowerShell equivalent:
 pwsh -File .\code_checking\bin\sync-consumer.ps1
 ```
 
-By default this command also appends or refreshes a managed README section in
-the consumer repository that links to submodule docs.
-
-```bash
-./code_checking/bin/sync-consumer.sh
-```
-
-PowerShell equivalent:
-
-```powershell
-pwsh -File .\code_checking\bin\sync-consumer.ps1
-```
-
 To skip README updates for a specific run:
+
+Linux/macOS:
 
 ```bash
 ./code_checking/bin/sync-consumer.sh --skip-readme
 ```
 
-This command:
-
-- Checks out the desired `code_checking` ref from `code-checking-ref`
-  (or `origin/main` by default)
-- Updates the recommended GitHub workflow in the consumer repository
-  (triggered on `pull_request` only to avoid duplicate `push` + PR runs)
-- Refreshes local pre-commit hook installation when the consumer repo already
-  uses pre-commit
-- Creates baseline `.gitignore`, `cspell.config.yaml`, and
-  `vscode-project-words.txt` in the consumer root when they are missing
-- Appends/refreshes a managed section in consumer `README.md` linking to
-  submodule documentation (unless `--skip-readme` is set)
-
-After adding or updating this submodule, sync the recommended GitHub workflow
-from this repository into the consumer repository:
-
-Linux/macOS:
-
-```bash
-./code_checking/bin/setup-github-workflow.sh --apply
-```
-
 PowerShell equivalent:
 
 ```powershell
-bash .\code_checking\bin\setup-github-workflow.sh --apply
+pwsh -File .\code_checking\bin\sync-consumer.ps1 -SkipReadme
 ```
 
-To validate that workflow content is current without modifying files:
+See [README.md](../README.md) for details on what `sync-consumer` does.
 
-```bash
-./code_checking/bin/setup-github-workflow.sh
-```
-
-PowerShell equivalent:
-
-```powershell
-bash .\code_checking\bin\setup-github-workflow.sh
-```
+Optionally, you can manually sync or validate the recommended GitHub workflow
+(see [README.md](../README.md) for details on `setup-github-workflow.sh`).
 
 ## Initial Consumer Commit
 
@@ -106,21 +66,7 @@ git -C code_checking fetch origin
 git submodule update --remote code_checking
 ```
 
-Stage the consumer-side files:
-
-The `code_checking` submodule was already added earlier. If it is modified,
-avoid adding it again in this staging step.
-
-```bash
-git add .github/workflows/      # include newly created workflow files
-git add .gitignore              # seeded if missing
-git add .gitmodules
-git add .pre-commit-config.yaml # if setup-dev was run
-git add README.md
-git add cspell.config.yaml      # seeded if missing
-git add vscode-project-words.txt # seeded if missing
-git commit -m "feat: add code_checking shared checks submodule"
-```
+For the staging and commit details, see [README.md](../README.md#initial-consumer-commit).
 
 Do not stage `code-checking-ref` for normal integration commits. It will
 usually remain visible in `git status` as an untracked file. The pre-commit
@@ -189,44 +135,13 @@ Use `--no-verify` only if your consumer PR intentionally tracks
 The `--no-verify` bypass is acceptable here because the guard hook is
 protecting against accidental commits; the PR is intentional.
 
-### Case 2: Updating the Submodule to a New main Tip
+For routine updates to a new main tip, see [README.md](../README.md#update-to-latest).
 
-Use this after a code_checking PR has merged to main and you want to bring
-the consumer repository up to date.
+For background on submodule update behavior and remote-tracking refs, see the
+official Git documentation:
 
-1. Fetch the latest main from the submodule remote:
-
-  ```bash
-  git -C code_checking fetch origin main
-  ```
-
-1. Update the submodule:
-
-  ```bash
-  git submodule update --remote code_checking
-  ```
-
-1. Regenerate the consumer workflow if tool requirements changed:
-
-  ```bash
-  ./code_checking/bin/setup-github-workflow.sh --apply
-  ```
-
-1. Stage and commit both the submodule pointer and any workflow changes:
-
-  ```bash
-  git add code_checking
-  git add .github/workflows/basic-source-checks.yml
-  git commit -m "Update code_checking submodule to latest main"
-  ```
-
-### Why git submodule update --remote Is Not Enough After Force-Push
-
-`git submodule update --remote` updates the submodule to the tip of the
-tracked branch, but only from what has already been fetched locally.
-After a force-push, the local remote-tracking ref still points to the old
-commit until you fetch. Only an explicit fetch followed by a hard reset
-moves the local checkout to the new commit.
+- https://git-scm.com/docs/git-submodule
+- https://git-scm.com/docs/git-fetch
 
 ## Scope
 
@@ -301,7 +216,7 @@ Recommended behavior for consumer workflows:
 Example:
 
 ```yaml
-- uses: actions/checkout@v4
+- uses: actions/checkout@v5
   with:
     submodules: recursive
     fetch-depth: 0
