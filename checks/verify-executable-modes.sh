@@ -40,7 +40,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
-CURRENT_DIR="$(pwd)"
 
 if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "[verify-exec-mode] target is not a git working tree: ${TARGET_ROOT}" >&2
@@ -67,19 +66,11 @@ while IFS= read -r path; do
 
   if [[ "${mode}" != "100755" ]]; then
     if [[ ${FIX_MODE} -eq 1 ]]; then
-      if [[ "${TARGET_ROOT}" == "${CURRENT_DIR}" ]]; then
-        git add --chmod=+x -- "${path}"
-      else
-        git -C "${TARGET_ROOT}" add --chmod=+x -- "${path}"
-      fi
-      echo "[verify-exec-mode] applied +x in git index: ${path}" >&2
+      git -C "${TARGET_ROOT}" add --chmod=+x -- "${path}"
+      echo "[verify-exec-mode] applied +x in git index: ${path}"
     else
       echo "[verify-exec-mode] missing +x in git index: ${path} (mode ${mode})" >&2
-      if [[ "${TARGET_ROOT}" == "${CURRENT_DIR}" ]]; then
-        echo "[verify-exec-mode] fix: git add --chmod=+x -- \"${path}\"" >&2
-      else
-        echo "[verify-exec-mode] fix: git -C \"${TARGET_ROOT}\" add --chmod=+x -- \"${path}\"" >&2
-      fi
+      echo "[verify-exec-mode] fix: git -C \"${TARGET_ROOT}\" add --chmod=+x -- \"${path}\"" >&2
       has_error=1
     fi
   fi

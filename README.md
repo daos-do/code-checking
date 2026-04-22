@@ -68,7 +68,7 @@ git submodule update --init --recursive
 Update to latest:
 
 ```bash
-git submodule update --remote code_checking
+git submodule update --remote code_checkingF
 git add code_checking
 git commit -m "Update code_checking submodule"
 ```
@@ -95,7 +95,7 @@ Local developer setup for pre-commit hooks is optional and separate from CI:
 `setup-dev` does not create or modify consumer `.github/workflows` files.
 
 To bootstrap or refresh consumer-repository integration after adding the
-submodule, updating it, or changing `.code-checking-ref`, run:
+submodule, updating it, or changing `code-checking-ref`, run:
 
 Linux/macOS:
 
@@ -126,8 +126,16 @@ To skip README updates for a specific run:
 For an initial consumer-repo integration commit after running
 `sync-consumer`, stage and review these files:
 
-The code_checking was previously added and changes to the branch it
-references will be ignored so no need to add it again if modified.
+- `.github/workflows/` (may need to add newly created files instead)
+- `.gitignore` (if seeded)
+- `.gitmodules`
+- `.pre-commit-config.yaml` (if `setup-dev` was run)
+- `README.md`
+- `cspell.config.yaml` (if seeded)
+- `vscode-project-words.txt` (if seeded)
+
+The `code_checking` submodule was previously added. Changes inside that
+directory are not required for this integration commit.
 
 ```bash
 git add .github/workflows/     # May need to add newly added files instead.
@@ -139,7 +147,7 @@ git add cspell.config.yaml     # seeded if missing
 git add vscode-project-words.txt  # seeded if missing
 ```
 
-Do not stage `.code-checking-ref` for normal integration commits. An
+Do not stage `code-checking-ref` for normal integration commits. An
 intentional validation PR may track it temporarily when testing a
 `code_checking` PR ref.
 
@@ -222,7 +230,7 @@ For detailed instructions on testing fixes before merge and updating after
 merge, see [docs/integration.md](docs/integration.md)
 under "Validating Fixes Before PR Merge".
 
-For required-status-check setup that blocks merges when `.code-checking-ref`
+For required-status-check setup that blocks merges when `code-checking-ref`
 is tracked, see
 [docs/integration.md](docs/integration.md#repository-rules-setup-github-web-ui).
 

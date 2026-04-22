@@ -122,20 +122,27 @@ Preferred order:
 In VS Code, right-click on a misspelled word (the squiggly underline) in the
 editor and choose one of these:
 
-> **Note**: If the misspelled word currently has editor focus (cursor is on it
-> or it is selected), right-clicking it may open a confirmation dialog at the
-> top of the editor rather than adding the word immediately. You must press
-> Enter in that dialog to confirm. If the dialog is overlooked and you click
-> elsewhere, the addition is silently discarded. To avoid this, first click
-> somewhere else in the editor to move focus away from the word, then
-> right-click the squiggly underline — this adds the word in one step with no
-> confirmation dialog.
-
 - Add to Workspace Dictionary: writes the word to `vscode-project-words.txt`
   based on `cspell.config.yaml` dictionaryDefinitions.
 - Add to Workspace Settings: writes the word into `.vscode/settings.json`
-  (`cSpell.words`) for this workspace.
-- Add to User Settings: writes the word into your personal VS Code user settings.
+  (`cSpell.words`) for this workspace that will remain private your workspace
+  directory.
+- Add to User Settings: writes the word into your personal VS Code user
+  settings that will be global to all you VS Code use only.
+
+<details>
+<summary>Expand for details about inconsistent right-click handling for adding
+words.</summary>
+
+If the misspelled word currently has editor focus (cursor is on it or it is
+selected), right-clicking it may open a confirmation dialog at the top of the
+editor rather than adding the word immediately. You must press Enter in that
+dialog to confirm. If the dialog is overlooked and you click elsewhere, the
+addition is silently discarded. To avoid this, first click somewhere else in
+the editor to move focus away from the word, then right-click the squiggly
+underline. This adds the word in one step with no confirmation dialog.
+
+</details>
 
 Recommended team workflow:
 

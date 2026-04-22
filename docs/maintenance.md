@@ -5,14 +5,17 @@ the primary usage README.
 
 ## Repository Rules and Branch Protection
 
-This repository requires a status check to pass before merging pull requests.
+This section documents how required status checks and branch protection are set
+up for this public repository. It is intended to help maintainers who may not
+regularly manage GitHub repository rules and need to configure or verify the
+merge protections used here.
 
 ### Overview
 
 The `basic-source-checks` job from the `checks.yml` workflow is configured as a
 required status check. This consolidates all code quality gates:
 
-- `.code-checking-ref` guard — blocks accidental commits of local overrides
+- `code-checking-ref` guard — blocks accidental commits of local overrides
 - Executable mode verification — ensures scripts have correct git index mode
 - Dynamic linter selection and execution — runs applicable linters
   (shellcheck, etc.)
@@ -62,11 +65,11 @@ if any of the check steps fail (guard, executable modes, or linters).
 **To verify the guard works:**
 
 1. Create a test branch from `main`.
-2. Create a local `.code-checking-ref` file with content: `origin/some-branch`
+2. Create a local `code-checking-ref` file with content: `origin/some-branch`
 3. Commit and push:
 
    ```bash
-   git add .code-checking-ref
+   git add code-checking-ref
    git commit -m "test guard"
    git push
    ```
@@ -78,15 +81,14 @@ if any of the check steps fail (guard, executable modes, or linters).
 The GitHub Actions job will show:
 
 ```text
-[guard-code-checking-ref] tracked file detected in commit: .code-checking-ref
+[guard-code-checking-ref] tracked file detected in commit: code-checking-ref
 ```
 
-To clean up, force-push without the test commit:
+To clean up:
 
-```bash
-git reset HEAD~1 --hard
-git push --force-with-lease
-```
+- Close the test PR if it is no longer needed.
+- If you want to keep using the branch for other changes, remove
+   `code-checking-ref`, commit that removal, and push the update.
 
 ## Initial Consumer Targets
 

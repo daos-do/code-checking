@@ -193,15 +193,22 @@ def canonicalize_shellcheck_settings(settings_obj):
 
     VS Code accepts both dotted and nested key styles. Preserve dotted keys
     as canonical output and collapse duplicate nested values created by merge.
+    If both styles define a value for the same sub-key and they differ,
+    preserve the dotted value and report the conflict.
     """
     nested_key = "shellcheck"
 
-    nested = settings_obj.get(nested_key)
-    if isinstance(nested, dict):
-        for sub_key, sub_value in list(nested.items()):
+    if nested_key in settings_obj and isinstance(settings_obj[nested_key], dict):
+        nested = settings_obj[nested_key]
+        for sub_key, sub_value in nested.items():
             dotted_key = f"shellcheck.{sub_key}"
             if dotted_key not in settings_obj:
                 settings_obj[dotted_key] = sub_value
+            elif settings_obj[dotted_key] != sub_value:
+                print(
+                    "[ide-workspace-setup] WARNING: conflicting shellcheck "
+                    f"settings for '{sub_key}'; preserving dotted key value"
+                )
         settings_obj.pop(nested_key, None)
 
 

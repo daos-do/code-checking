@@ -3,7 +3,7 @@
 set -euo pipefail
 
 TARGET_ROOT=""
-FILE_NAME=".code-checking-ref"
+FILE_NAME="code-checking-ref"
 
 usage() {
   cat <<'EOF'

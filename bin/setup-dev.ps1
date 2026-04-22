@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $PSCommandPath
 $libraryRoot = Split-Path -Parent $scriptDir
 $targetRoot = (Get-Location).Path
+$codeCheckingPath = ''
 
 for ($index = 0; $index -lt $args.Count; $index++) {
     switch ($args[$index]) {
@@ -12,8 +13,12 @@ for ($index = 0; $index -lt $args.Count; $index++) {
             $index++
             $targetRoot = $args[$index]
         }
+        '--code-checking-path' {
+            $index++
+            $codeCheckingPath = $args[$index]
+        }
         '--help' {
-            Write-Host 'Usage: setup-dev.ps1 [--target-root PATH]'
+            Write-Host 'Usage: setup-dev.ps1 [--target-root PATH] [--code-checking-path PATH]'
             Write-Host 'Delegates to setup-dev.sh using WSL bash or Git Bash.'
             exit 0
         }
@@ -53,7 +58,11 @@ if (-not (Test-Path -LiteralPath $setupScript -PathType Leaf)) {
 Push-Location $targetRoot
 try {
     . (Join-Path $libraryRoot 'checks/invoke-bash.ps1')
-    Invoke-BashScript -ScriptPath $setupScript -ScriptArgs @('--target-root', $targetRoot)
+    $scriptArgs = @('--target-root', $targetRoot)
+    if ($codeCheckingPath) {
+        $scriptArgs += @('--code-checking-path', $codeCheckingPath)
+    }
+    Invoke-BashScript -ScriptPath $setupScript -ScriptArgs $scriptArgs
 }
 finally {
     Pop-Location

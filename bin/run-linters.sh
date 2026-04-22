@@ -63,13 +63,13 @@ if [[ ${FIX_MODE} -eq 1 ]]; then
   echo "[linters] fix mode: enabled"
 fi
 
+verify_args=(--target-root "${TARGET_ROOT}")
 if [[ ${FIX_MODE} -eq 1 ]]; then
-  bash "${LIB_ROOT}/checks/verify-executable-modes.sh" \
-    --target-root "${TARGET_ROOT}" \
-    --fix
+  verify_args+=(--fix)
 fi
+"${LIB_ROOT}/checks/verify-executable-modes.sh" "${verify_args[@]}"
 
-bash "${LIB_ROOT}/checks/ensure-code-checking-ref.sh" \
+"${LIB_ROOT}/checks/ensure-code-checking-ref.sh" \
   --library-root "${LIB_ROOT}" \
   --target-root "${TARGET_ROOT}"
 
@@ -83,7 +83,7 @@ if [[ -n "${BASE_REF}" ]]; then
 fi
 
 mapfile -t REQUIRED_LINTERS < <(
-  bash "${LIB_ROOT}/checks/detect-linters.sh" "${detect_args[@]}"
+  "${LIB_ROOT}/checks/detect-linters.sh" "${detect_args[@]}"
 )
 
 if [[ ${#REQUIRED_LINTERS[@]} -eq 0 ]]; then
@@ -93,56 +93,37 @@ fi
 
 echo "[linters] selected linters: ${REQUIRED_LINTERS[*]}"
 
-bash "${LIB_ROOT}/checks/ensure-linter-tools.sh" "${REQUIRED_LINTERS[@]}"
+"${LIB_ROOT}/checks/ensure-linter-tools.sh" "${REQUIRED_LINTERS[@]}"
+
+run_args_common=(
+  --library-root "${LIB_ROOT}"
+  --target-root "${TARGET_ROOT}"
+  --mode "${MODE}"
+)
+if [[ -n "${BASE_REF}" ]]; then
+  run_args_common+=(--base-ref "${BASE_REF}")
+fi
 
 for linter in "${REQUIRED_LINTERS[@]}"; do
   case "${linter}" in
     shellcheck)
-      run_args=(
-        --library-root "${LIB_ROOT}"
-        --target-root "${TARGET_ROOT}"
-        --mode "${MODE}"
-      )
-      if [[ -n "${BASE_REF}" ]]; then
-        run_args+=(--base-ref "${BASE_REF}")
-      fi
-      bash "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"
       ;;
     codespell)
-      run_args=(
-        --library-root "${LIB_ROOT}"
-        --target-root "${TARGET_ROOT}"
-        --mode "${MODE}"
-      )
-      if [[ -n "${BASE_REF}" ]]; then
-        run_args+=(--base-ref "${BASE_REF}")
-      fi
-      bash "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"
       ;;
     text-hygiene)
-      run_args=(
-        --library-root "${LIB_ROOT}"
-        --target-root "${TARGET_ROOT}"
-        --mode "${MODE}"
-      )
-      if [[ -n "${BASE_REF}" ]]; then
-        run_args+=(--base-ref "${BASE_REF}")
-      fi
+      run_args=("${run_args_common[@]}")
       if [[ ${FIX_MODE} -eq 1 ]]; then
         run_args+=(--fix)
       fi
-      bash "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}"
+      "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}"
       ;;
     filename-portability)
-      run_args=(
-        --library-root "${LIB_ROOT}"
-        --target-root "${TARGET_ROOT}"
-        --mode "${MODE}"
-      )
-      if [[ -n "${BASE_REF}" ]]; then
-        run_args+=(--base-ref "${BASE_REF}")
-      fi
-      bash "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}"
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}"
       ;;
     *)
       echo "Unknown linter selected: ${linter}" >&2

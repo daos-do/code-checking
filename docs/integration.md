@@ -11,7 +11,7 @@ Consumer repositories keep local wrappers and workflow files and call shared
 scripts from `code_checking/`.
 
 For bootstrap and validation flows, use the consumer sync command after adding
-the submodule, updating it, or changing `.code-checking-ref`.
+the submodule, updating it, or changing `code-checking-ref`.
 
 Linux/macOS:
 
@@ -46,7 +46,7 @@ To skip README updates for a specific run:
 
 This command:
 
-- Checks out the desired `code_checking` ref from `.code-checking-ref`
+- Checks out the desired `code_checking` ref from `code-checking-ref`
   (or `origin/main` by default)
 - Updates the recommended GitHub workflow in the consumer repository
   (triggered on `pull_request` only to avoid duplicate `push` + PR runs)
@@ -122,7 +122,7 @@ git add vscode-project-words.txt # seeded if missing
 git commit -m "feat: add code_checking shared checks submodule"
 ```
 
-Do not stage `.code-checking-ref` for normal integration commits. It will
+Do not stage `code-checking-ref` for normal integration commits. It will
 usually remain visible in `git status` as an untracked file. The pre-commit
 guard hook blocks accidental commits of it. An intentional validation PR may
 track it temporarily when testing a `code_checking` PR ref.
@@ -135,15 +135,15 @@ tip after a merge.
 
 ### Case 1: Testing a Force-Pushed code_checking PR
 
-This is the case where you have `.code-checking-ref` set to a PR branch
+This is the case where you have `code-checking-ref` set to a PR branch
 and that PR was force-pushed. `git submodule update --remote` is not
 sufficient here because it does not know to reset to the new force-pushed
 commits; you need to fetch and hard-reset.
 
-1. Find the branch name in `.code-checking-ref`.
+1. Find the branch name in `code-checking-ref`.
 
   ```bash
-  cat .code-checking-ref
+  cat code-checking-ref
   # example output: sre-3706-codespell
   ```
 
@@ -185,7 +185,7 @@ commits; you need to fetch and hard-reset.
   ```
 
 Use `--no-verify` only if your consumer PR intentionally tracks
-`.code-checking-ref` and the guard hook fires on it.
+`code-checking-ref` and the guard hook fires on it.
 The `--no-verify` bypass is acceptable here because the guard hook is
 protecting against accidental commits; the PR is intentional.
 
@@ -238,7 +238,7 @@ Jenkins-specific behavior is intentionally out of scope.
 For consumer repositories, the convention is:
 
 1. Default: use the tip of `main` for `code_checking`.
-2. Optional override: allow a root file named `.code-checking-ref` to
+2. Optional override: allow a root file named `code-checking-ref` to
   temporarily select a PR ref or specific commit for validation. In normal
   use it remains untracked locally; in an intentional validation PR it may be
   tracked temporarily.
@@ -250,7 +250,7 @@ pre-merge validation when needed.
 
 Local pre-commit runs use the same desired-ref policy. They verify (without
 changing files) that `code_checking` is checked out at the commit resolved from
-`.code-checking-ref` (or `origin/main` when the file is absent).
+`code-checking-ref` (or `origin/main` when the file is absent).
 
 ## Prerequisites
 
@@ -295,7 +295,7 @@ Use `actions/checkout` with submodules enabled.
 Recommended behavior for consumer workflows:
 
 - Default to `origin/main` for `code_checking`
-- If `.code-checking-ref` exists, resolve and use that ref instead
+- If `code-checking-ref` exists, resolve and use that ref instead
 - Do not rely on the commit pinned in the submodule pointer for checks
 
 Example:
@@ -309,8 +309,8 @@ Example:
 - name: Resolve code_checking ref
   run: |
     REF="origin/main"
-    if [ -f .code-checking-ref ]; then
-      REF="$(grep -v '^[[:space:]]*#' .code-checking-ref |
+    if [ -f code-checking-ref ]; then
+      REF="$(grep -v '^[[:space:]]*#' code-checking-ref |
              sed '/^[[:space:]]*$/d' | head -n 1)"
     fi
     if [ -z "${REF}" ]; then REF="origin/main"; fi
@@ -342,7 +342,7 @@ Example step:
 ```
 
 This allows normal local override usage while still allowing intentional
-validation PRs that temporarily track `.code-checking-ref`, without hiding the
+validation PRs that temporarily track `code-checking-ref`, without hiding the
 results of later checks. The guard still leaves the final job status failed so
 the PR cannot merge accidentally.
 
@@ -361,8 +361,8 @@ jobs:
       - name: Resolve code_checking ref
         run: |
           REF="origin/main"
-          if [ -f .code-checking-ref ]; then
-            REF="$(grep -v '^[[:space:]]*#' .code-checking-ref |
+          if [ -f code-checking-ref ]; then
+            REF="$(grep -v '^[[:space:]]*#' code-checking-ref |
                    sed '/^[[:space:]]*$/d' | head -n 1)"
           fi
           if [ -z "${REF}" ]; then REF="origin/main"; fi
@@ -374,7 +374,7 @@ jobs:
           esac
           git -C ./code_checking fetch origin "${FETCH_REF}"
           git -C ./code_checking checkout FETCH_HEAD
-      - name: Block tracked .code-checking-ref
+      - name: Block tracked code-checking-ref
         id: guard_code_checking_ref
         continue-on-error: true
         run: |
@@ -386,7 +386,7 @@ jobs:
             --target-root .
       - name: Run shared linters
         run: bash ./code_checking/bin/run-linters.sh
-      - name: Fail if .code-checking-ref is tracked
+      - name: Fail if code-checking-ref is tracked
         if: >-
           ${{ always() &&
               steps.guard_code_checking_ref.outcome == 'failure' }}
@@ -432,7 +432,7 @@ if any check steps fail (guard, executable modes, or linters).
 
 **Optional test (guard behavior):**
 
-- Create a test PR that intentionally tracks `.code-checking-ref`
+- Create a test PR that intentionally tracks `code-checking-ref`
 - Verify merge is blocked by the required check
 
 To validate override behavior locally, bypass pre-commit checks with:
@@ -447,7 +447,7 @@ branch.
 ## Validating Fixes Before PR Merge
 
 When validating a `code_checking` pull request from a consumer repository,
-create or update `.code-checking-ref` in the consumer repository root with the
+create or update `code-checking-ref` in the consumer repository root with the
 desired ref value.
 
 Supported values can be any ref accepted by `git checkout`, such as:
@@ -459,7 +459,7 @@ Supported values can be any ref accepted by `git checkout`, such as:
 
 Suggested validation flow:
 
-1. Set `.code-checking-ref` to the PR ref (for example `pull/123/head`).
+1. Set `code-checking-ref` to the PR ref (for example `pull/123/head`).
 2. Run `./code_checking/bin/sync-consumer.sh` from the consumer repo root.
 3. Commit the resulting consumer-repo changes if needed (for example workflow
   updates or submodule pointer changes).
@@ -475,7 +475,7 @@ Local pre-commit validation uses the same ref value. If you need a manual
 fallback, sync your local checkout first:
 
 ```bash
-REF="$(grep -v '^[[:space:]]*#' .code-checking-ref |
+REF="$(grep -v '^[[:space:]]*#' code-checking-ref |
        sed '/^[[:space:]]*$/d' | head -n 1)"
 if [ -z "$REF" ]; then REF="origin/main"; fi
 git -C code_checking fetch origin "$REF"
@@ -486,8 +486,8 @@ PowerShell equivalent:
 
 ```powershell
 $ref = 'origin/main'
-if (Test-Path -LiteralPath .code-checking-ref) {
-  foreach ($line in Get-Content -LiteralPath .code-checking-ref) {
+if (Test-Path -LiteralPath code-checking-ref) {
+  foreach ($line in Get-Content -LiteralPath code-checking-ref) {
     $trimmed = $line.Trim()
     if (-not $trimmed) { continue }
     if ($trimmed.StartsWith('#')) { continue }
@@ -502,8 +502,8 @@ git -C code_checking checkout FETCH_HEAD
 Example workflow step after checkout:
 
 ```bash
-if [ -f .code-checking-ref ]; then
-  REF="$(cat .code-checking-ref)"
+if [ -f code-checking-ref ]; then
+  REF="$(cat code-checking-ref)"
   git -C code_checking fetch origin "$REF"
   git -C code_checking checkout FETCH_HEAD
 else
@@ -519,6 +519,6 @@ override file is not tracked.
 
 To return to default behavior after validation:
 
-1. Remove `.code-checking-ref` (or set it to `origin/main`).
+1. Remove `code-checking-ref` (or set it to `origin/main`).
 2. Re-run the GitHub workflow.
 3. Confirm the workflow uses `origin/main` for `code_checking`.

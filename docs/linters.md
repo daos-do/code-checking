@@ -77,37 +77,23 @@ repos:
 
 Local pre-commit runs will then use the changed-file mode automatically.
 Before running selected linters, the runner verifies that `code_checking` is
-at the desired commit resolved from `.code-checking-ref` (or the submodule git
-link recorded in the consumer repository HEAD when that file is missing). The
-check is non-mutating and fails with sync commands if the checkout does not
-match.
+at the desired commit resolved from `code-checking-ref` (or `origin/main`
+when the file is missing). The check is non-mutating and fails with sync
+commands if the checkout does not match.
 The runner also performs a centralized tool preflight check so required linter
 executables are present before individual linter scripts run.
 
-For local debugging with hook parity, run this single command from the
-repository root:
+For local debugging of linter behavior from the repository root:
 
 ```bash
-./bin/run-pre-commit-checks.sh
+./bin/run-linters.sh
 ```
 
-This runs the same checks as commit hooks in order:
-
-- `forbid tracked .code-checking-ref`
-- `verify executable modes`
-- `basic source linters`
-
-To apply available auto-fixes:
+For full pre-commit parity, run the tracked-ref guard first, then run linters:
 
 ```bash
-./bin/run-pre-commit-checks.sh --fix
-```
-
-PowerShell equivalent:
-
-```powershell
-pwsh -File .\bin\run-pre-commit-checks.ps1
-pwsh -File .\bin\run-pre-commit-checks.ps1 --fix
+./checks/guard-code-checking-ref.sh --target-root .
+./bin/run-linters.sh
 ```
 
 Current tool preflight mapping:
@@ -128,8 +114,7 @@ be split naturally.
 
 ### New Linter Tool Installation Convention
 
-When adding new linters (for example markdown or groovy linters), use this
-installation policy:
+When adding new linters, use this installation policy:
 
 1. Prefer distro package manager installs for Linux hosts.
 2. Prefer native platform package managers on macOS (Homebrew).
@@ -155,7 +140,7 @@ and CI all need to stay explicit and reviewable.
 
 For a new linter such as `codespell`, review and update these areas:
 
-1. Detection
+1. Linter Selection
 
 - `checks/detect-linters.sh`
 - `checks/detect-linters.ps1`
@@ -216,7 +201,9 @@ Examples:
 
 - `.shellcheckrc`
 - `.yamllint`
-- future `codespell` ignore/config files if needed
+- `.markdownlint.jsonc` (allow `details`/`summary` HTML for collapsible
+  documentation notes via MD033 `allowed_elements`)
+- `codespell` ignore/config files if needed
 
 ### Example: codespell integration touched
 
@@ -283,14 +270,11 @@ ShellCheck-specific guidance:
 
 ## Required Checks in GitHub
 
-Consumer repositories should prefer one stable required workflow job name and
-run dynamic linter selection inside that job.
-That avoids coupling branch protection to a changing set of per-linter job
-names.
+Configure branch protection in consumer repositories to require the following
+status check before merging:
 
-Excluded submodule paths are derived from the real location of this repository
-relative to the target repository root, so consumer repositories are not tied
-to a hardcoded submodule directory name.
+- **`Basic Source checks`** — the single job that runs the guard, executable
+  mode verification, and all linters.
 
 ## Execution Design Map
 
@@ -300,18 +284,26 @@ and what each script or directory is responsible for.
 ### GitHub Actions Flow
 
 1. Consumer workflow checks out repository content with submodules.
-2. Consumer workflow optionally resolves `.code-checking-ref` and checks out
+2. Consumer workflow optionally resolves `code-checking-ref` and checks out
    that ref in `code_checking` (otherwise uses `origin/main`).
-3. Consumer workflow runs `bash ./code_checking/bin/run-linters.sh`.
-4. Runner verifies the current `code_checking` checkout matches the desired
-   ref, then performs changed-file linter selection and execution.
+3. Consumer workflow runs `./code_checking/bin/run-linters.sh`.
+4. During that run, the runner verifies the current `code_checking` checkout
+  matches the desired ref, then performs changed-file linter selection and
+  execution.
 
 ### Pre-commit Flow
 
-1. Pre-commit resolves hook entry from this repository hook definition.
-2. Hook entry runs `bash ./bin/run-linters.sh --mode changed`.
-3. Runner verifies desired `code_checking` ref first.
-4. Runner selects applicable linters for changed files and executes only those.
+1. Ensure your local `code_checking` checkout is synced to its tracked branch
+   before commit checks (normal flow: `git submodule update --remote --init
+   code_checking`).
+2. Attempt your commit with staged changes.
+3. Pre-commit resolves hook entry from this repository hook definition and runs
+   applicable checks.
+4. If checks pass, the commit proceeds.
+5. If checks fail, fix issues manually or use auto-fix mode for supported
+   bulk-cleanup cases.
+6. Retry checks from the command line with `./bin/run-linters.sh`.
+7. After checks pass, retry the commit.
 
 ### Auto-Fix Mode
 
@@ -322,16 +314,14 @@ Selected checks support `--fix` to automatically correct certain issues.
 Use `--fix` from the command line:
 
 ```bash
-./bin/run-pre-commit-checks.sh --fix
-./checks/verify-executable-modes.sh --target-root . --fix
-./bin/run-linters.sh --target-root . --mode changed --fix
+./bin/run-linters.sh --fix
 ```
 
 Current fix coverage:
 
-- `run-linters.sh --fix`: also applies `verify-executable-modes.sh --fix`
-- `verify-executable-modes.sh`: applies `git add --chmod=+x` for shebang files
-- `text-hygiene`: trims trailing whitespace and adds final newline where missing
+- Shell script executable mode bits (for files with a shebang)
+- Trailing whitespace
+- Missing final newline
 
 #### Pre-commit Hooks
 
@@ -348,8 +338,6 @@ repos:
     hooks:
       - id: shellcheck
         args: [--fix]
-      - id: verify-executable-modes
-        args: [--fix]
 ```
 
 When enabled, the hooks will:
@@ -364,17 +352,16 @@ having it happen by default.
 
 ### Script and Directory Responsibilities
 
-- `bin/run-linters.sh` and `bin/run-linters.ps1`:
+- `bin/run-linters.(sh|ps1)`:
   top-level orchestration entrypoints for CI, local, and pre-commit runs.
-- `checks/ensure-code-checking-ref.sh` and
-  `checks/ensure-code-checking-ref.ps1`:
-  non-mutating verification that checkout matches `.code-checking-ref`
+- `checks/ensure-code-checking-ref.(sh|ps1)`:
+  non-mutating verification that checkout matches `code-checking-ref`
   (or `origin/main` by default).
-- `checks/detect-linters.sh` and `checks/detect-linters.ps1`:
+- `checks/detect-linters.(sh|ps1)`:
   changed-file analysis and linter selection.
 - `checks/ensure-linter-tools.sh`:
   centralized executable preflight check for selected linters.
-- `checks/linters/<linter>/run.sh` and `run.ps1`:
+- `checks/linters/<linter>/run.(sh|ps1)`:
   per-linter executors that apply file filtering and invoke the tool.
 - `.pre-commit-hooks.yaml`:
   exported hook definitions used by consumer repositories.

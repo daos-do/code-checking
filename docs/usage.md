@@ -3,7 +3,7 @@
 ## Local checks (shell)
 
 ```bash
-bash bin/run-checks.sh
+./bin/run-checks.sh
 ```
 
 ## Local checks (PowerShell)
@@ -15,44 +15,28 @@ pwsh -File ./bin/run-checks.ps1
 ## Local setup (shell)
 
 ```bash
-bash bin/setup-dev.sh
+./bin/setup-dev.sh
 ```
 
 This script:
 
-- Checks for pre-commit and shellcheck prerequisites
-- Attempts to install missing tools via package managers first
+- Checks for pre-commit and linter tool prerequisites
+- Attempts to install missing tools
 - Initializes pre-commit hooks in your repository
 
-For pre-commit hook usage, you need the pre-commit package.
-On Linux, `setup-dev.sh` uses distro package managers only (apt/dnf/yum),
-with no pip fallback.
-On macOS, it prefers Homebrew and can fall back to user-scoped pip installs.
+## Local setup (PowerShell)
 
-For Linux/macOS manual install, prefer your system package manager:
+On Windows, run `bootstrap-windows-dev.ps1` first to install the bash runtime,
+`pre-commit`, and other required tools. Re-run it if major changes have been
+made to this `code_checking` repository and you need to refresh the local
+tooling setup. This is normally a one-time setup per Windows system, not
+something you need to repeat for each Visual Studio Code instance:
 
-```bash
-# macOS (Homebrew)
-brew install pre-commit
-
-# Debian/Ubuntu
-sudo apt-get install pre-commit
+```powershell
+pwsh -File ./bin/bootstrap-windows-dev.ps1
 ```
 
-Avoid `sudo pip install` on Linux because it can conflict with distro-managed
-Python packages.
-
-For linter execution, ensure linter executables are installed on PATH.
-The linter runner performs a preflight check and fails early with install hints
-when required tools are missing.
-
-Current requirements:
-
-- `pre-commit` for commit-hook integration
-- `shellcheck` for shell linting
-- `codespell` for spelling checks in changed text paths
-
-## Local setup (PowerShell)
+Then run:
 
 ```powershell
 pwsh -File ./bin/setup-dev.ps1
@@ -61,11 +45,9 @@ pwsh -File ./bin/setup-dev.ps1
 This script is a PowerShell preflight wrapper that delegates to
 `setup-dev.sh` through WSL bash (preferred) or Git Bash.
 
-If neither runtime is present, it exits with install guidance and references
-this document.
-
-For Windows, run `bootstrap-windows-dev.ps1` first to install pre-commit and
-other tools.
+If neither runtime is present, it exits with install guidance. In the normal
+Windows setup flow, that means `bootstrap-windows-dev.ps1` has not been run
+yet or did not complete successfully.
 
 ## Local scratch files
 
@@ -140,7 +122,7 @@ Non-Windows shells can use `bootstrap-python.sh` to verify that Python 3 is
 available before running setup.
 
 ```bash
-bash ./code_checking/bin/bootstrap-python.sh
+./code_checking/bin/bootstrap-python.sh
 ```
 
 CI validation on Windows (no installs):
@@ -169,7 +151,7 @@ Setup command names:
 
 - Windows: `python .\code_checking\bin\ide-workspace-setup.py` (dry run)
 - Non-Windows shells:
-  `bash ./code_checking/bin/ide-workspace-setup.sh` (dry run)
+  `./code_checking/bin/ide-workspace-setup.sh` (dry run)
 - Add `--apply` to perform a live write
 
 Examples:
@@ -180,8 +162,8 @@ python .\code_checking\bin\ide-workspace-setup.py --apply
 ```
 
 ```bash
-bash ./code_checking/bin/ide-workspace-setup.sh
-bash ./code_checking/bin/ide-workspace-setup.sh --apply
+./code_checking/bin/ide-workspace-setup.sh
+./code_checking/bin/ide-workspace-setup.sh --apply
 ```
 
 Note: `ide-workspace-setup` merges into any existing `.vscode/settings.json`

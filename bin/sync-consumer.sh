@@ -69,10 +69,6 @@ while [[ $# -gt 0 ]]; do
       REFRESH_PRE_COMMIT=false
       shift
       ;;
-    --update-readme)
-      UPDATE_README=true
-      shift
-      ;;
     --skip-readme)
       UPDATE_README=false
       shift
@@ -91,15 +87,14 @@ done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
 
-if [[ ! -d "${TARGET_ROOT}/.git" ]]; then
+if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "[sync-consumer] target is not a git repository: ${TARGET_ROOT}" >&2
   exit 2
 fi
 
 if [[ "${LIB_ROOT}" == "${TARGET_ROOT}" ]]; then
   echo "[sync-consumer] target root is the code_checking repository itself" >&2
-  echo "[sync-consumer] run this from a consumer repository that vendors" >&2
-  echo "[sync-consumer] code_checking as a submodule" >&2
+  echo "[sync-consumer] run this from a consumer repository that vendors code_checking as a submodule" >&2
   exit 2
 fi
 
@@ -108,13 +103,14 @@ if [[ "${LIB_ROOT}/" != "${TARGET_ROOT}/"* ]]; then
   exit 2
 fi
 
-if [[ "${LIB_ROOT}/" == "${TARGET_ROOT}/"* ]]; then
-  inferred_path="${LIB_ROOT#"${TARGET_ROOT}/"}"
-  if [[ -n "${inferred_path}" && "${inferred_path}" != "${LIB_ROOT}" ]]; then
-    SUBMODULE_PATH="${inferred_path}"
-  fi
-fi
+inferred_path="${LIB_ROOT#"${TARGET_ROOT}/"}"
+SUBMODULE_PATH="${inferred_path}"
 
+# The consumer may override the desired code_checking ref here; this is
+# separate from the currently checked-out submodule commit.
+# This is normally used only for testing pull requests or specific refs
+# of the submodule and should never be present in a pull requests at the
+# time that it is landed.
 REF_FILE="${TARGET_ROOT}/.code-checking-ref"
 DESIRED_REF="${DEFAULT_REF}"
 
@@ -190,7 +186,7 @@ else
 fi
 
 if [[ "${REFRESH_WORKFLOW}" == true ]]; then
-  bash "${LIB_ROOT}/bin/setup-github-workflow.sh" \
+  "${LIB_ROOT}/bin/setup-github-workflow.sh" \
     --target-root "${TARGET_ROOT}" \
     --submodule-path "${SUBMODULE_PATH}" \
     --apply
@@ -250,6 +246,10 @@ ${END_MARKER}"
   fi
 fi
 
+# These baseline files are copied only when missing to bootstrap consumer repos.
+# We intentionally do not use symlinks because consumer repos may need to tailor
+# these files over time, and symlink behavior is inconsistent across platforms
+# and git configurations (especially on Windows).
 if [[ ! -f "${TARGET_ROOT}/.gitignore" ]]; then
   GITIGNORE_BASELINE="${LIB_ROOT}/.gitignore"
   if [[ -f "${GITIGNORE_BASELINE}" ]]; then
@@ -261,6 +261,9 @@ if [[ ! -f "${TARGET_ROOT}/.gitignore" ]]; then
 fi
 
 if [[ ! -f "${TARGET_ROOT}/cspell.config.yaml" ]]; then
+  # cspell (VS Code extension/CLI) uses cspell.config.yaml and
+  # vscode-project-words.txt. codespell is a separate linter with its own
+  # dictionary logic and does not consume these cspell files.
   CSPELL_CONFIG_BASELINE="${LIB_ROOT}/cspell.config.yaml"
   if [[ -f "${CSPELL_CONFIG_BASELINE}" ]]; then
     cp "${CSPELL_CONFIG_BASELINE}" "${TARGET_ROOT}/cspell.config.yaml"

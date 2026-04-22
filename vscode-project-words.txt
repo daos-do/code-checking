@@ -9,6 +9,7 @@ debugpy
 esac
 filemode
 gitfs
+gitlink
 groovylint
 gvars
 isort

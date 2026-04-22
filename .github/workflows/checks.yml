@@ -19,13 +19,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck codespell
 
-      - name: Block tracked .code-checking-ref
-        run: bash checks/guard-code-checking-ref.sh --target-root .
-
-      - name: Verify executable modes
-        run: bash checks/verify-executable-modes.sh --target-root .
+      - name: Block tracked code-checking-ref
+        run: ./checks/guard-code-checking-ref.sh --target-root .
 
       - name: Run linters on changed files
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: bash bin/run-linters.sh
+        run: ./bin/run-linters.sh

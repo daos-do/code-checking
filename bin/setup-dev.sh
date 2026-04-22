@@ -2,9 +2,23 @@
 # Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
+TARGET_ROOT="$(pwd)"
+CODE_CHECKING_PATH=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-TARGET_ROOT="$(pwd)"
+
+usage() {
+  echo "Usage: setup-dev.sh [--target-root PATH] [--code-checking-path PATH]"
+  echo
+  echo "Checks local prerequisites and installs or refreshes pre-commit hooks in the"
+  echo "target repository."
+  echo
+  echo "Defaults:"
+  echo "- target root: current directory"
+  echo
+  echo "Required for bootstrap:"
+  echo "- --code-checking-path must be provided when .pre-commit-config.yaml is missing"
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -12,20 +26,17 @@ while [[ $# -gt 0 ]]; do
       TARGET_ROOT="$2"
       shift 2
       ;;
+    --code-checking-path)
+      CODE_CHECKING_PATH="$2"
+      shift 2
+      ;;
     --help|-h)
-      cat <<'EOF'
-Usage: setup-dev.sh [--target-root PATH]
-
-Checks local prerequisites and installs or refreshes pre-commit hooks in the
-target repository.
-
-Defaults:
-- target root: current directory
-EOF
+      usage
       exit 0
       ;;
     *)
       echo "Unknown argument: $1" >&2
+      usage >&2
       exit 2
       ;;
   esac
@@ -33,39 +44,23 @@ done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
 
-infer_code_checking_path() {
-  if [[ "${LIB_ROOT}" == "${TARGET_ROOT}" ]]; then
-    printf '.\n'
-    return 0
-  fi
-
-  if [[ "${LIB_ROOT}/" == "${TARGET_ROOT}/"* ]]; then
-    local inferred_path="${LIB_ROOT#"${TARGET_ROOT}/"}"
-    if [[ -n "${inferred_path}" && "${inferred_path}" != "${LIB_ROOT}" ]]; then
-      printf '%s\n' "${inferred_path}"
-      return 0
-    fi
-  fi
-
-  if [[ -d "${TARGET_ROOT}/code_checking" ]]; then
-    printf 'code_checking\n'
-    return 0
-  fi
-
-  return 1
-}
-
 create_pre_commit_config_if_missing() {
   local config_path="${TARGET_ROOT}/.pre-commit-config.yaml"
   if [[ -f "${config_path}" ]]; then
     return 0
   fi
 
-  local code_checking_path=""
-  if ! code_checking_path="$(infer_code_checking_path)"; then
-    echo "[setup-dev] no .pre-commit-config.yaml found and unable to locate code_checking path from ${TARGET_ROOT}" >&2
-    echo "[setup-dev] expected submodule at ${TARGET_ROOT}/code_checking or setup-dev script under the target root" >&2
+  echo "[setup-dev] no .pre-commit-config.yaml found. Creating..."
+
+  if [[ -z "${CODE_CHECKING_PATH}" ]]; then
+    echo "[setup-dev] unable to locate code_checking path from ${TARGET_ROOT}" >&2
+    echo "[setup-dev] provide --code-checking-path (for example: code_checking or .)" >&2
     return 1
+  fi
+
+  local code_checking_path="${CODE_CHECKING_PATH#./}"
+  if [[ -z "${code_checking_path}" ]]; then
+    code_checking_path="."
   fi
 
   local hook_prefix="."
@@ -73,88 +68,49 @@ create_pre_commit_config_if_missing() {
     hook_prefix="./${code_checking_path}"
   fi
 
-  cat > "${config_path}" <<EOF
-repos:
-  - repo: local
-    hooks:
-      - id: forbid-code-checking-ref
-        name: forbid tracked .code-checking-ref
-        entry: ${hook_prefix}/checks/guard-code-checking-ref.sh --target-root .
-        language: script
-        pass_filenames: false
-        always_run: true
-        stages: [commit]
-        require_serial: true
-      - id: verify-executable-modes
-        name: verify executable modes
-        entry: ${hook_prefix}/checks/verify-executable-modes.sh --target-root .
-        language: script
-        pass_filenames: false
-        always_run: true
-        stages: [commit]
-        require_serial: true
-      - id: shellcheck
-        name: shellcheck
-        entry: ${hook_prefix}/bin/run-linters.sh --mode changed --target-root .
-        language: script
-        pass_filenames: false
-        types: [shell]
-        stages: [commit]
-        require_serial: false
-EOF
+  {
+    printf '%s\n' 'repos:'
+    printf '%s\n' '  - repo: local'
+    printf '%s\n' '    hooks:'
+    printf '%s\n' '      - id: forbid-code-checking-ref'
+    printf '%s\n' '        name: forbid tracked .code-checking-ref'
+    printf '%s\n' "        entry: ${hook_prefix}/checks/guard-code-checking-ref.sh --target-root ."
+    printf '%s\n' '        language: script'
+    printf '%s\n' '        pass_filenames: false'
+    printf '%s\n' '        always_run: true'
+    printf '%s\n' '        stages: [commit]'
+    printf '%s\n' '        require_serial: true'
+    printf '%s\n' '      - id: shellcheck'
+    printf '%s\n' '        name: shellcheck'
+    printf '%s\n' "        entry: ${hook_prefix}/bin/run-linters.sh --mode changed --target-root ."
+    printf '%s\n' '        language: script'
+    printf '%s\n' '        pass_filenames: false'
+    printf '%s\n' '        types: [shell]'
+    printf '%s\n' '        stages: [commit]'
+    printf '%s\n' '        require_serial: false'
+  } > "${config_path}"
 
   echo "[setup-dev] created .pre-commit-config.yaml using ${hook_prefix} hooks"
 }
 
-check_and_install_tool() {
-  local tool_name="$1"
+install_with_system_package_manager() {
+  local package_name="$1"
 
-  if command -v "$tool_name" >/dev/null 2>&1; then
-    echo "[setup-dev] [ok] $tool_name found"
-    return 0
+  if command -v apt-get >/dev/null 2>&1; then
+    echo "[setup-dev] installing ${package_name} via apt-get..."
+    sudo apt-get update
+    sudo apt-get install -y "${package_name}"
+    return $?
   fi
 
-  echo "[setup-dev] [missing] $tool_name not found, attempting to install..."
+  if command -v dnf >/dev/null 2>&1; then
+    echo "[setup-dev] installing ${package_name} via dnf..."
+    sudo dnf install -y "${package_name}"
+    return $?
+  fi
 
-  case "$(uname -s)" in
-    Darwin)
-      # macOS with Homebrew
-      if command -v brew >/dev/null 2>&1; then
-        echo "[setup-dev] installing $tool_name via homebrew..."
-        brew install "$tool_name"
-        return $?
-      else
-        echo "[setup-dev] homebrew not found; install it first or install $tool_name manually" >&2
-        return 1
-      fi
-      ;;
-    Linux)
-      # Try apt first (Debian/Ubuntu)
-      if command -v apt-get >/dev/null 2>&1; then
-        echo "[setup-dev] installing $tool_name via apt-get..."
-        sudo apt-get update
-        sudo apt-get install -y "$tool_name"
-        return $?
-      # Try dnf (Fedora/RHEL)
-      elif command -v dnf >/dev/null 2>&1; then
-        echo "[setup-dev] installing $tool_name via dnf..."
-        sudo dnf install -y "$tool_name"
-        return $?
-      # Try yum (older RHEL)
-      elif command -v yum >/dev/null 2>&1; then
-        echo "[setup-dev] installing $tool_name via yum..."
-        sudo yum install -y "$tool_name"
-        return $?
-      else
-        echo "[setup-dev] no package manager found; install $tool_name manually" >&2
-        return 1
-      fi
-      ;;
-    *)
-      echo "[setup-dev] unknown OS; install $tool_name manually" >&2
-      return 1
-      ;;
-  esac
+  echo "[setup-dev] no supported package manager found." >&2
+  return 1
 }
 
 install_python_package() {
@@ -163,27 +119,17 @@ install_python_package() {
   # On Linux, try distro package manager only (no pip fallback)
   case "$(uname -s)" in
     Linux)
-      if command -v apt-get >/dev/null 2>&1; then
-        echo "[setup-dev] installing $pkg_name via apt-get..."
-        sudo apt-get update
-        sudo apt-get install -y "$pkg_name"
-        return $?
-      elif command -v dnf >/dev/null 2>&1; then
-        echo "[setup-dev] installing $pkg_name via dnf..."
-        sudo dnf install -y "$pkg_name"
-        return $?
-      elif command -v yum >/dev/null 2>&1; then
-        echo "[setup-dev] installing $pkg_name via yum..."
-        sudo yum install -y "$pkg_name"
-        return $?
-      else
-        echo "[setup-dev] $pkg_name not found in distro repositories" >&2
-        echo "[setup-dev] install via your Linux distro package manager (apt, dnf, yum, etc.)" >&2
-        return 1
-      fi
+      install_with_system_package_manager "$pkg_name"
+      return $?
       ;;
     # On non-Linux systems, allow user-scoped pip fallback (macOS, etc.)
     *)
+      if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
+        echo "[setup-dev] installing $pkg_name via homebrew..."
+        brew install "$pkg_name"
+        return $?
+      fi
+
       if [[ "$(id -u)" -eq 0 ]]; then
         echo "[setup-dev] refusing to install $pkg_name with pip as root" >&2
         echo "[setup-dev] use system package manager when possible; otherwise rerun as non-root" >&2
@@ -202,7 +148,7 @@ install_python_package() {
         pip install --user "$pkg_name"
         return $?
       else
-        echo "[setup-dev] neither distro package manager nor pip found; install $pkg_name manually" >&2
+        echo "[setup-dev] no supported automatic installer found; install $pkg_name manually" >&2
         return 1
       fi
       ;;
@@ -220,26 +166,27 @@ if ! command -v pre-commit >/dev/null 2>&1; then
   fi
 fi
 
-# Check and install shellcheck
-if ! check_and_install_tool shellcheck; then
-  echo "[setup-dev] note: shellcheck is required for pre-commit shell linting" >&2
-  echo "[setup-dev] continuing despite missing shellcheck (check will fail until installed)" >&2
+# Install required external linter tools for this repository content.
+if ! "${LIB_ROOT}/checks/install-linter-tools.sh" \
+  --library-root "${LIB_ROOT}" \
+  --target-root "${TARGET_ROOT}" \
+  --mode full; then
+  echo "[setup-dev] note: unable to auto-install one or more linter tools" >&2
+  echo "[setup-dev] continuing; lint checks may fail until tools are installed" >&2
 fi
 
 if ! create_pre_commit_config_if_missing; then
   exit 1
 fi
 
-# Initialize pre-commit hooks only when target repo is configured for pre-commit
-if [[ ! -d "${TARGET_ROOT}/.git" ]]; then
-  echo "[setup-dev] not a git repository; skipping pre-commit hook initialization"
-elif [[ ! -f "${TARGET_ROOT}/.pre-commit-config.yaml" ]]; then
-  echo "[setup-dev] no .pre-commit-config.yaml in target root; skipping hook initialization"
-else
-  echo "[setup-dev] initializing pre-commit hooks..."
-  cd "${TARGET_ROOT}"
-  pre-commit install --install-hooks
-  echo "[setup-dev] pre-commit hooks initialized"
+if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "[setup-dev] target is not a git repository: ${TARGET_ROOT}" >&2
+  exit 1
 fi
+
+echo "[setup-dev] initializing pre-commit hooks..."
+cd "${TARGET_ROOT}"
+pre-commit install --install-hooks
+echo "[setup-dev] pre-commit hooks initialized"
 
 echo "[setup-dev] setup complete"

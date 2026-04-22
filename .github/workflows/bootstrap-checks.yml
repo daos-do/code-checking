@@ -17,7 +17,7 @@ jobs:
           sudo apt-get install -y python3-yaml
 
       - name: Run bootstrap checks
-        run: bash bin/run-checks.sh
+        run: ./bin/run-checks.sh
 
       - name: Smoke test Python setup engine
         run: |
@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p tmp-ci-shell-workspace
           cd tmp-ci-shell-workspace
-          bash ../bin/ide-workspace-setup.sh
+          ../bin/ide-workspace-setup.sh
 
   validate-windows-bootstrap:
     runs-on: windows-latest

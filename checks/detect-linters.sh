@@ -2,103 +2,39 @@
 # Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
-LIB_ROOT=""
-TARGET_ROOT=""
-MODE="changed"
-BASE_REF="${GITHUB_BASE_REF:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/linter-common.sh"
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --library-root)
-      LIB_ROOT="$2"
-      shift 2
-      ;;
-    --target-root)
-      TARGET_ROOT="$2"
-      shift 2
-      ;;
-    --mode)
-      MODE="$2"
-      shift 2
-      ;;
-    --base-ref)
-      BASE_REF="$2"
-      shift 2
-      ;;
-    *)
-      echo "Unknown argument: $1" >&2
-      exit 2
-      ;;
-  esac
-done
-
-if [[ -z "${LIB_ROOT}" || -z "${TARGET_ROOT}" ]]; then
-  echo "--library-root and --target-root are required" >&2
-  exit 2
-fi
-
-LIB_ROOT="$(cd "${LIB_ROOT}" && pwd)"
-TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
-LIB_RELATIVE_PATH=""
-if [[ "${LIB_ROOT}" == "${TARGET_ROOT}"/* ]]; then
-  LIB_RELATIVE_PATH="${LIB_ROOT#"${TARGET_ROOT}/"}"
-fi
-
-get_changed_files() {
-  if [[ "${MODE}" == "full" ]]; then
-    (cd "${TARGET_ROOT}" && find . -type f -print | sed 's#^./##')
-    return
-  fi
-
-  if [[ -n "${BASE_REF}" ]]; then
-    (cd "${TARGET_ROOT}" && git diff --name-only --diff-filter=ACMR "origin/${BASE_REF}...HEAD")
-    return
-  fi
-
-  local staged_files
-  staged_files="$(cd "${TARGET_ROOT}" && git diff --name-only --cached --diff-filter=ACMR)"
-  if [[ -n "${staged_files}" ]]; then
-    printf '%s\n' "${staged_files}"
-    return
-  fi
-
-  {
-    cd "${TARGET_ROOT}"
-    git diff --name-only --diff-filter=ACMR
-    git ls-files --others --exclude-standard
-  } | awk 'NF && !seen[$0]++'
-}
+linter_parse_common_args "$@"
+linter_fail_on_unknown_args
+linter_require_common_args
 
 shellcheck_needed=0
 codespell_needed=0
 text_hygiene_needed=0
 filename_portability_needed=0
 while IFS= read -r file_path; do
-  [[ -z "${file_path}" ]] && continue
-  if [[ -n "${LIB_RELATIVE_PATH}" && "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
-    continue
-  fi
+  linter_should_skip_candidate_path "${file_path}" && continue
 
   codespell_needed=1
   text_hygiene_needed=1
   filename_portability_needed=1
 
-  case "${file_path}" in
-    *.sh)
-      shellcheck_needed=1
-      ;;
-  esac
-done < <(get_changed_files)
+  if linter_is_shell_script_candidate "${file_path}"; then
+    shellcheck_needed=1
+  fi
+done < <(linter_get_candidate_files_acmr)
 
 if [[ ${shellcheck_needed} -eq 1 ]]; then
-  printf '%s\n' 'shellcheck'
+  echo 'shellcheck'
 fi
 if [[ ${codespell_needed} -eq 1 ]]; then
-  printf '%s\n' 'codespell'
+  echo 'codespell'
 fi
 if [[ ${text_hygiene_needed} -eq 1 ]]; then
-  printf '%s\n' 'text-hygiene'
+  echo 'text-hygiene'
 fi
 if [[ ${filename_portability_needed} -eq 1 ]]; then
-  printf '%s\n' 'filename-portability'
+  echo 'filename-portability'
 fi
