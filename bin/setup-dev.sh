@@ -73,7 +73,7 @@ create_pre_commit_config_if_missing() {
     printf '%s\n' '  - repo: local'
     printf '%s\n' '    hooks:'
     printf '%s\n' '      - id: forbid-code-checking-ref'
-    printf '%s\n' '        name: forbid tracked .code-checking-ref'
+    printf '%s\n' '        name: forbid tracked code-checking-ref'
     printf '%s\n' "        entry: ${hook_prefix}/checks/guard-code-checking-ref.sh --target-root ."
     printf '%s\n' '        language: script'
     printf '%s\n' '        pass_filenames: false'

@@ -37,7 +37,7 @@ Usage: sync-consumer.sh [--target-root PATH] [--submodule-path PATH]
                         [--skip-pre-commit] [--skip-readme]
 
 Synchronizes a consumer repository to the desired code_checking ref from
-.code-checking-ref (or origin/main by default), refreshes the recommended
+code-checking-ref (or origin/main by default), refreshes the recommended
 GitHub workflow, and refreshes local pre-commit hook installation when the
 consumer repository already uses pre-commit.
 
@@ -111,7 +111,7 @@ SUBMODULE_PATH="${inferred_path}"
 # This is normally used only for testing pull requests or specific refs
 # of the submodule and should never be present in a pull requests at the
 # time that it is landed.
-REF_FILE="${TARGET_ROOT}/.code-checking-ref"
+REF_FILE="${TARGET_ROOT}/code-checking-ref"
 DESIRED_REF="${DEFAULT_REF}"
 
 if [[ -f "${REF_FILE}" ]]; then

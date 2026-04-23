@@ -80,9 +80,9 @@ build_workflow_yaml() {
   printf '%s\n' '      - name: Resolve code_checking ref'
   printf '%s\n' '        run: |'
   printf '%s\n' '          REF="origin/main"'
-  printf '%s\n' '          if [ -f .code-checking-ref ]; then'
+  printf '%s\n' '          if [ -f code-checking-ref ]; then'
   printf '%s\n' '            REF="$('
-  printf '%s\n' "              grep -v '^[[:space:]]*#' .code-checking-ref \\"
+  printf '%s\n' "              grep -v '^[[:space:]]*#' code-checking-ref \\"
   printf '%s\n' "                | sed '/^[[:space:]]*$/d' \\"
   printf '%s\n' '                | head -n 1'
   printf '%s\n' '            )"'
@@ -118,7 +118,7 @@ build_workflow_yaml() {
   printf '%s\n' '            --mode changed \'
   printf '%s\n' '            --base-ref "${GITHUB_BASE_REF:-}"'
   printf '%s\n' ''
-  printf '%s\n' '      - name: Block tracked .code-checking-ref'
+  printf '%s\n' '      - name: Block tracked code-checking-ref'
   printf '%s\n' '        id: guard_code_checking_ref'
   printf '%s\n' '        continue-on-error: true'
   printf '%s\n' '        run: |'
@@ -130,12 +130,12 @@ build_workflow_yaml() {
   printf '%s\n' '          GITHUB_BASE_REF: ${{ github.base_ref }}'
   printf '%s\n' "        run: ./${code_checking_path}/bin/run-linters.sh"
   printf '%s\n' ''
-  printf '%s\n' '      - name: Fail if .code-checking-ref is tracked'
+  printf '%s\n' '      - name: Fail if code-checking-ref is tracked'
   printf '%s\n' '        if: >-'
   printf '%s\n' '          ${{ always() &&'
   printf '%s\n' "              steps.guard_code_checking_ref.outcome == 'failure' }}"
   printf '%s\n' '        run: |'
-  printf '%s\n' '          echo "[workflow] .code-checking-ref was tracked in this change" >&2'
+  printf '%s\n' '          echo "[workflow] code-checking-ref was tracked in this change" >&2'
   printf '%s\n' '          echo "[workflow] keeping the final job status failed after" >&2'
   printf '%s\n' '          echo "[workflow] running the remaining checks" >&2'
   printf '%s\n' '          exit 1'
