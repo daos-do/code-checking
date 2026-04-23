@@ -12,7 +12,7 @@ scripts with the Windows Python instance.
 
 ## Path Model
 
-The linter runner uses two roots:
+The linter entrypoint script uses two roots:
 
 - Library root: derived from the location of the script in this repository.
 - Target root: the repository being checked.
@@ -34,7 +34,8 @@ that contains the shared checker scripts.
 ## Changed-Files Mode
 
 The default mode is `changed`.
-In that mode the runner selects linters based on changed paths only.
+In that mode the entrypoint script selects linters based on changed paths
+only.
 
 Selection order:
 
@@ -57,6 +58,20 @@ The changed-file linter set currently includes:
 - `text-hygiene` (trailing whitespace and missing final newline)
 - `filename-portability` (non-ASCII filename guard)
 - `shellcheck` (shell script linting for `*.sh`)
+- `groovylint` (Groovy and Jenkins DSL linting for `*.groovy`, `*.gradle`,
+  and `Jenkinsfile*`)
+- `markdownlint` (Markdown linting for `*.md` and `*.markdown`)
+
+Groovylint execution also includes a post-lint guard that rejects implicit
+script-binding assignments (bare `name = value` at statement start) to prevent
+Jenkins parallel-stage shared-state hazards.
+
+Markdownlint is pinned to `markdownlint-cli@0.39.0` to match the version
+bundled by the VS Code `vscode-markdownlint` extension. Using the same version
+ensures that rule suppressions in consumer `.markdownlint.json` files work
+consistently between local editor checks and CI runs. markdownlint-cli is
+installed via npm and auto-discovers a `.markdownlint.json` (or
+`.markdownlint.yaml`) config file in the consumer repository root when present.
 
 Current exclusions:
 
@@ -76,12 +91,13 @@ repos:
 ```
 
 Local pre-commit runs will then use the changed-file mode automatically.
-Before running selected linters, the runner verifies that `code_checking` is
+Before running selected linters, the entrypoint script verifies that
+`code_checking` is
 at the desired commit resolved from `code-checking-ref` (or `origin/main`
 when the file is missing). The check is non-mutating and fails with sync
 commands if the checkout does not match.
-The runner also performs a centralized tool preflight check so required linter
-executables are present before individual linter scripts run.
+The entrypoint script also performs a centralized tool preflight check so
+required linter executables are present before individual linter scripts run.
 
 For local debugging of linter behavior from the repository root:
 
@@ -100,6 +116,12 @@ Current tool preflight mapping:
 
 - `shellcheck` linter requires `shellcheck` executable on PATH
 - `codespell` linter requires `codespell` executable on PATH
+- `groovylint` linter requires `npm-groovy-lint` on PATH; `npm-groovy-lint` is
+  installed via npm with an explicit version pin in
+  `checks/install-linter-tools.sh`
+- `markdownlint` linter requires the `markdownlint` CLI on PATH;
+  `markdownlint-cli` is installed via npm (see the markdownlint version note in
+  the Current Linters section above)
 
 On Linux/macOS targets, preflight failures include install hints for common
 package managers.
@@ -121,7 +143,12 @@ When adding new linters, use this installation policy:
 3. Use language package managers only as a fallback when no platform package
   convention exists.
 4. Avoid system-wide `pip` installs on Linux (especially `sudo pip`).
-5. Keep tools CLI-accessible on PATH so both pre-commit and CI behavior are
+5. For Node-based linters, install the Node/npm runtime with the platform
+  package manager first, then install the linter CLI with `npm`. On
+  Ubuntu/WSL, `apt-get install --reinstall nodejs npm` is preferred because
+  distro Node packages sometimes have a broken ELF interpreter path; the
+  installer detects this and creates a loader-wrapper script automatically.
+6. Keep tools CLI-accessible on PATH so both pre-commit and CI behavior are
   consistent.
 
 For each new linter integration PR, include:
@@ -151,7 +178,7 @@ Add selection logic so the linter is chosen for the relevant changed files.
 - `bin/run-linters.sh`
 - `bin/run-linters.ps1`
 
-Add a dispatch case that calls the per-linter runner.
+Add a dispatch case that calls the per-linter script.
 
 1. Per-linter executor
 
@@ -203,7 +230,7 @@ Examples:
 The `codespell` addition required updates to:
 
 - detection scripts
-- top-level runners
+- top-level entrypoint scripts
 - tool preflight
 - CI install step
 - per-linter `run.sh` and `run.ps1`
@@ -280,7 +307,8 @@ and what each script or directory is responsible for.
 2. Consumer workflow optionally resolves `code-checking-ref` and checks out
    that ref in `code_checking` (otherwise uses `origin/main`).
 3. Consumer workflow runs `./code_checking/bin/run-linters.sh`.
-4. During that run, the runner verifies the current `code_checking` checkout
+4. During that run, the entrypoint script verifies the current `code_checking`
+  checkout
   matches the desired ref, then performs changed-file linter selection and
   execution.
 

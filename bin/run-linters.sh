@@ -110,6 +110,14 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"
       ;;
+    groovylint)
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/groovylint/run.sh" "${run_args[@]}"
+      ;;
+    markdownlint)
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}"
+      ;;
     codespell)
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"

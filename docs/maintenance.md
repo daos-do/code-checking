@@ -97,7 +97,7 @@ To clean up:
 
 ## Planned Content Areas
 
-- Shell and PowerShell check runners
+- Shell and PowerShell check scripts
 - Check script library (ansible-lint, yamllint, shellcheck, markdownlint,
   groovylint, codespell)
 - IDE setup baselines and a master IDE-agnostic YAML input (with VS Code
