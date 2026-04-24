@@ -118,9 +118,20 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}"
       ;;
+    yamllint)
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/yamllint/run.sh" "${run_args[@]}"
+      ;;
     python)
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"
+      ;;
+    copyright)
+      run_args=("${run_args_common[@]}")
+      if [[ ${FIX_MODE} -eq 1 ]]; then
+        run_args+=(--fix)
+      fi
+      "${LIB_ROOT}/checks/linters/copyright/run.sh" "${run_args[@]}"
       ;;
     codespell)
       run_args=("${run_args_common[@]}")

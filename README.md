@@ -113,9 +113,9 @@ This command syncs the `code_checking` ref, writes the recommended GitHub
 workflow (`pull_request` trigger only, to avoid duplicate `push` + PR runs),
 bootstraps or refreshes pre-commit hooks, and updates the consumer `README.md`
 managed section. It also seeds baseline `.gitignore`,
-`cspell.config.yaml`, and `vscode-project-words.txt` in the consumer root when
-those files are missing. Running `sync-consumer` means you do not need
-to run `setup-github-workflow.sh` separately.
+`cspell.config.yaml`, `.yamllint`, and `vscode-project-words.txt` in the
+consumer root when those files are missing. Running `sync-consumer` means you
+do not need to run `setup-github-workflow.sh` separately.
 
 To skip README updates for a specific run:
 
@@ -132,6 +132,7 @@ For an initial consumer-repo integration commit after running
 - `.pre-commit-config.yaml` (if `setup-dev` was run)
 - `README.md`
 - `cspell.config.yaml` (if seeded)
+- `.yamllint` (if seeded)
 - `vscode-project-words.txt` (if seeded)
 
 The `code_checking` submodule was previously added. Changes inside that
@@ -144,6 +145,7 @@ git add .gitmodules
 git add .pre-commit-config.yaml   # if setup-dev was run
 git add README.md
 git add cspell.config.yaml     # seeded if missing
+git add .yamllint              # seeded if missing
 git add vscode-project-words.txt  # seeded if missing
 ```
 

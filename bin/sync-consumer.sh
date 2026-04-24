@@ -273,6 +273,16 @@ if [[ ! -f "${TARGET_ROOT}/cspell.config.yaml" ]]; then
   fi
 fi
 
+if [[ ! -f "${TARGET_ROOT}/.yamllint" ]]; then
+  YAMLLINT_BASELINE="${LIB_ROOT}/.yamllint"
+  if [[ -f "${YAMLLINT_BASELINE}" ]]; then
+    cp "${YAMLLINT_BASELINE}" "${TARGET_ROOT}/.yamllint"
+    echo "[sync-consumer] created .yamllint from code_checking baseline"
+  else
+    echo "[sync-consumer] baseline not found: ${YAMLLINT_BASELINE}" >&2
+  fi
+fi
+
 if [[ ! -f "${TARGET_ROOT}/vscode-project-words.txt" ]]; then
   CSPELL_WORDS_BASELINE="${LIB_ROOT}/vscode-project-words.txt"
   if [[ -f "${CSPELL_WORDS_BASELINE}" ]]; then

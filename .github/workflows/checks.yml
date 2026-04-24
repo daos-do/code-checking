@@ -1,7 +1,8 @@
 # Copyright 2026 Hewlett Packard Enterprise Development LP
+---
 name: checks
 
-on:
+'on':
   pull_request:
 
 jobs:

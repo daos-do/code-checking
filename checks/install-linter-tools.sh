@@ -250,6 +250,7 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
     shellcheck)   PACKAGES+=("shellcheck") ;;
     groovylint)   PACKAGES+=("npm") ;;
     markdownlint) PACKAGES+=("npm") ;;
+    yamllint)     PACKAGES+=("yamllint") ;;
     python)       PACKAGES+=("flake8" "pylint") ;;
     codespell)    PACKAGES+=("codespell")  ;;
     *)            continue                 ;;

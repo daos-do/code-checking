@@ -61,9 +61,10 @@ WORKFLOW_PATH="${TARGET_ROOT}/${WORKFLOW_RELATIVE_PATH}"
 build_workflow_yaml() {
   local code_checking_path="$1"
 
+  printf '%s\n' '---'
   printf '%s\n' 'name: basic-source-checks'
   printf '%s\n' ''
-  printf '%s\n' 'on:'
+  printf '%s\n' "'on':"
   printf '%s\n' '  pull_request:'
   printf '%s\n' ''
   printf '%s\n' 'jobs:'

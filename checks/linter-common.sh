@@ -188,6 +188,21 @@ linter_is_markdown_candidate() {
   return 1
 }
 
+linter_is_yaml_candidate() {
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.yml|*.yaml|.yamllint|.ansible-lint)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 linter_is_python_candidate() {
   local file_path="$1"
   local absolute_path="${TARGET_ROOT}/${file_path}"
@@ -211,6 +226,29 @@ linter_is_python_candidate() {
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
     '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?python([[:space:]]|$)'; then
+    return 0
+  fi
+
+  return 1
+}
+
+linter_is_copyright_candidate() {
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.sh|*.bash|*.dash|*.ksh|*.zsh|*.ps1|*.psm1|*.psd1|*.py)
+      return 0
+      ;;
+  esac
+
+  # Files without an extension may still declare supported script types.
+  if linter_is_shell_script_candidate "${file_path}"; then
+    return 0
+  fi
+  if linter_is_python_candidate "${file_path}"; then
     return 0
   fi
 

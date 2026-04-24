@@ -61,7 +61,10 @@ The changed-file linter set currently includes:
 - `groovylint` (Groovy and Jenkins DSL linting for `*.groovy`, `*.gradle`,
   and `Jenkinsfile*`)
 - `markdownlint` (Markdown linting for `*.md` and `*.markdown`)
+- `yamllint` (YAML linting for `*.yml`, `*.yaml`, and `.yamllint`)
 - `python` (shared Python linting for `*.py` using `flake8` and `pylint`)
+- `copyright` (copyright header check for script/source files with
+  optional `--fix` insertion)
 
 Groovylint execution also includes a post-lint guard that rejects implicit
 script-binding assignments (bare `name = value` at statement start) to prevent
@@ -125,6 +128,23 @@ Current tool preflight mapping:
   the Current Linters section above)
 - `python` linter requires both `flake8` and `pylint` on PATH and runs both
   tools against the same changed Python file set
+- `yamllint` linter requires `yamllint` on PATH
+- `copyright` linter does not require an external executable and validates
+  `# Copyright <year> Hewlett Packard Enterprise Development LP` headers in
+  candidate files
+
+### Copyright Header Policy
+
+The `copyright` linter enforces the repository header format below for
+candidate script/source files:
+
+- `# Copyright <year> Hewlett Packard Enterprise Development LP`
+
+Current policy alignment:
+
+- HPE baseline policy requires this notice for covered contribution content.
+- Local group policy applies the notice consistently across covered files,
+  with `--fix` available to insert missing headers.
 
 On Linux/macOS targets, preflight failures include install hints for common
 package managers.
@@ -291,10 +311,10 @@ ShellCheck-specific guidance:
   in that case use a local
   `shellcheck disable=...` with a short rationale comment
 
-## Required Checks in GitHub
+## Enforcing Required Checks in GitHub
 
-Configure branch protection in consumer repositories to require the following
-status check before merging:
+For public repositories configure branch protection in consumer repositories
+to require the following status check before merging:
 
 - **`Basic Source checks`** — the single job that runs the guard, executable
   mode verification, and all linters.

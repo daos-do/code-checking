@@ -23,10 +23,20 @@ usage() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target-root)
+      if [[ $# -lt 2 || -z "${2}" || "${2}" == --* ]]; then
+        echo "Missing value for $1" >&2
+        usage >&2
+        exit 2
+      fi
       TARGET_ROOT="$2"
       shift 2
       ;;
     --code-checking-path)
+      if [[ $# -lt 2 || -z "${2}" || "${2}" == --* ]]; then
+        echo "Missing value for $1" >&2
+        usage >&2
+        exit 2
+      fi
       CODE_CHECKING_PATH="$2"
       shift 2
       ;;
@@ -53,6 +63,13 @@ create_pre_commit_config_if_missing() {
   echo "[setup-dev] no .pre-commit-config.yaml found. Creating..."
 
   if [[ -z "${CODE_CHECKING_PATH}" ]]; then
+    # Auto-detect when invoked via a vendored code_checking submodule.
+    if [[ "${LIB_ROOT}/" == "${TARGET_ROOT}/"* ]]; then
+      CODE_CHECKING_PATH="${LIB_ROOT#"${TARGET_ROOT}/"}"
+    fi
+  fi
+
+  if [[ -z "${CODE_CHECKING_PATH}" ]]; then
     echo "[setup-dev] unable to locate code_checking path from ${TARGET_ROOT}" >&2
     echo "[setup-dev] provide --code-checking-path (for example: code_checking or .)" >&2
     return 1
@@ -69,6 +86,7 @@ create_pre_commit_config_if_missing() {
   fi
 
   {
+    printf '%s\n' '---'
     printf '%s\n' 'repos:'
     printf '%s\n' '  - repo: local'
     printf '%s\n' '    hooks:'
