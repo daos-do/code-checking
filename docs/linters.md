@@ -61,6 +61,7 @@ The changed-file linter set currently includes:
 - `groovylint` (Groovy and Jenkins DSL linting for `*.groovy`, `*.gradle`,
   and `Jenkinsfile*`)
 - `markdownlint` (Markdown linting for `*.md` and `*.markdown`)
+- `python` (shared Python linting for `*.py` using `flake8` and `pylint`)
 
 Groovylint execution also includes a post-lint guard that rejects implicit
 script-binding assignments (bare `name = value` at statement start) to prevent
@@ -122,6 +123,8 @@ Current tool preflight mapping:
 - `markdownlint` linter requires the `markdownlint` CLI on PATH;
   `markdownlint-cli` is installed via npm (see the markdownlint version note in
   the Current Linters section above)
+- `python` linter requires both `flake8` and `pylint` on PATH and runs both
+  tools against the same changed Python file set
 
 On Linux/macOS targets, preflight failures include install hints for common
 package managers.

@@ -118,6 +118,10 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}"
       ;;
+    python)
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"
+      ;;
     codespell)
       run_args=("${run_args_common[@]}")
       "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"
