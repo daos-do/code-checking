@@ -7,7 +7,6 @@ ignore: |
   *venv/
   LEGACY/**
   collections/ansible_collections/**
-  roles*/**
 
 rules:
   comments-indentation: disable
@@ -18,11 +17,6 @@ rules:
   line-length:
     max: 120
     allow-non-breakable-inline-mappings: true
-    ignore: |
-      playbooks/*.yml
   octal-values:
     forbid-implicit-octal: true
     forbid-explicit-octal: true
-  truthy:
-    ignore: |
-      playbooks/*.yml

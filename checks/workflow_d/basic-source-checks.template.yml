@@ -1,0 +1,79 @@
+---
+name: basic-source-checks
+
+'on':
+  pull_request:
+
+jobs:
+  basic-source-checks:
+    name: Basic Source checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Resolve code_checking ref
+        run: |
+          REF="origin/main"
+          if [ -f code-checking-ref ]; then
+            REF="$(
+              grep -v '^[[:space:]]*#' code-checking-ref \
+                | sed '/^[[:space:]]*$/d' \
+                | head -n 1
+            )"
+          fi
+          if [ -z "${REF}" ]; then
+            REF="origin/main"
+          fi
+          case "${REF}" in
+            refs/*)
+              FETCH_REF="${REF}"
+              ;;
+            origin/*)
+              FETCH_REF="refs/heads/${REF#origin/}"
+              ;;
+            pull/*/head|pull/*/merge)
+              FETCH_REF="refs/${REF}"
+              ;;
+            *)
+              FETCH_REF="refs/heads/${REF}"
+              ;;
+          esac
+          git -C ./__CODE_CHECKING_PATH__ fetch origin "${FETCH_REF}"
+          git -C ./__CODE_CHECKING_PATH__ checkout FETCH_HEAD
+          echo "[workflow] using code_checking ref: ${REF}"
+
+      - name: Install linter tools
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          ./__CODE_CHECKING_PATH__/checks/install-linter-tools.sh \
+            --library-root ./__CODE_CHECKING_PATH__ \
+            --target-root . \
+            --mode changed \
+            --base-ref "${GITHUB_BASE_REF:-}"
+
+      - name: Block tracked code-checking-ref
+        id: guard_code_checking_ref
+        continue-on-error: true
+        run: |
+          ./__CODE_CHECKING_PATH__/checks/guard-code-checking-ref.sh \
+            --target-root .
+
+      - name: Run linters on changed files
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: ./__CODE_CHECKING_PATH__/bin/run-linters.sh
+
+      - name: Fail if code-checking-ref is tracked
+        if: >-
+          ${{ always() &&
+              steps.guard_code_checking_ref.outcome == 'failure' }}
+        run: |
+          echo "[workflow] code-checking-ref was tracked in this change" >&2
+          echo "[workflow] keeping the final job status failed after" >&2
+          echo "[workflow] running the remaining checks" >&2
+          exit 1

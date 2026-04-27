@@ -3,6 +3,7 @@
 set -euo pipefail
 
 FIX_MODE=0
+STAGE_MODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../linter-common.sh"
@@ -12,6 +13,9 @@ for arg in "${LINTER_REMAINING_ARGS[@]}"; do
   case "${arg}" in
     --fix)
       FIX_MODE=1
+      ;;
+    --no-stage)
+      STAGE_MODE=0
       ;;
     *)
       echo "Unknown argument: ${arg}" >&2
@@ -41,7 +45,9 @@ while IFS= read -r file_path; do
   if grep -nE '[[:blank:]]+$' "${absolute_path}" >/dev/null; then
     if [[ ${FIX_MODE} -eq 1 ]]; then
       sed -i 's/[[:blank:]]\+$//' "${absolute_path}"
-      git -C "${TARGET_ROOT}" add -- "${file_path}"
+      if [[ ${STAGE_MODE} -eq 1 ]]; then
+        git -C "${TARGET_ROOT}" add -- "${file_path}"
+      fi
       echo "[text-hygiene] fixed trailing whitespace: ${file_path}" >&2
     else
       echo "[text-hygiene] trailing whitespace: ${file_path}" >&2
@@ -53,11 +59,14 @@ while IFS= read -r file_path; do
   # Check for text files that do not have a newline at the end of their
   # last line with content in it.
   if [[ -s "${absolute_path}" ]]; then
-    last_byte="$(tail -c 1 "${absolute_path}" | od -An -t u1 | tr -d '[:space:]')"
+    last_byte="$(tail -c 1 "${absolute_path}" | od -An -t u1 |
+      tr -d '[:space:]')"
     if [[ -n "${last_byte}" && "${last_byte}" != "10" ]]; then
       if [[ ${FIX_MODE} -eq 1 ]]; then
         printf '\n' >> "${absolute_path}"
-        git -C "${TARGET_ROOT}" add -- "${file_path}"
+        if [[ ${STAGE_MODE} -eq 1 ]]; then
+          git -C "${TARGET_ROOT}" add -- "${file_path}"
+        fi
         echo "[text-hygiene] fixed final newline: ${file_path}" >&2
       else
         echo "[text-hygiene] missing final newline: ${file_path}" >&2

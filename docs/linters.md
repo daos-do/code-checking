@@ -63,8 +63,17 @@ The changed-file linter set currently includes:
 - `markdownlint` (Markdown linting for `*.md` and `*.markdown`)
 - `yamllint` (YAML linting for `*.yml`, `*.yaml`, and `.yamllint`)
 - `python` (shared Python linting for `*.py` using `flake8` and `pylint`)
-- `copyright` (copyright header check for script/source files with
-  optional `--fix` insertion)
+- `copyright` (copyright header check for script/source files)
+
+Fix-capable checks currently support `--fix`:
+
+- `verify-executable-modes` (sets executable mode in git index for shebang
+  files)
+- `text-hygiene` (trailing whitespace and final newline fixes)
+- `copyright` (missing header insertion)
+
+When `--fix` is enabled, fixes are staged by default. Use `--no-stage` to
+apply fixes without auto-staging.
 
 Groovylint execution also includes a post-lint guard that rejects implicit
 script-binding assignments (bare `name = value` at statement start) to prevent
@@ -130,7 +139,7 @@ Current tool preflight mapping:
   tools against the same changed Python file set
 - `yamllint` linter requires `yamllint` on PATH
 - `copyright` linter does not require an external executable and validates
-  `# Copyright <year> Hewlett Packard Enterprise Development LP` headers in
+  `# Copyright <years> Hewlett Packard Enterprise Development LP` headers in
   candidate files
 
 ### Copyright Header Policy
@@ -138,13 +147,27 @@ Current tool preflight mapping:
 The `copyright` linter enforces the repository header format below for
 candidate script/source files:
 
-- `# Copyright <year> Hewlett Packard Enterprise Development LP`
+- `# Copyright <years> Hewlett Packard Enterprise Development LP`
+
+Where `<years>` supports compact lists/ranges such as `2024,2026-2027`.
 
 Current policy alignment:
 
 - HPE baseline policy requires this notice for covered contribution content.
 - Local group policy applies the notice consistently across covered files,
   with `--fix` available to insert missing headers.
+
+Current scope is **program source files only**: shell scripts, Python, and
+PowerShell. YAML and XML files are not currently checked.
+
+Open questions pending management ruling:
+
+- Should Ansible YAML playbooks/roles (program logic, not configuration) carry
+  copyright notices?
+- Should XML configuration files used in the project carry notices?
+
+Extend `linter_is_copyright_candidate` in `checks/linter-common.sh` and update
+this section once those decisions are made.
 
 On Linux/macOS targets, preflight failures include install hints for common
 package managers.
@@ -361,11 +384,20 @@ Use `--fix` from the command line:
 ./bin/run-linters.sh --fix
 ```
 
+By default `--fix` also stages corrected files via `git add`. To apply fixes
+without staging (for example to review changes before staging manually), add
+`--no-stage`:
+
+```bash
+./bin/run-linters.sh --fix --no-stage
+```
+
 Current fix coverage:
 
 - Shell script executable mode bits (for files with a shebang)
 - Trailing whitespace
 - Missing final newline
+- Copyright header insertion
 
 #### Pre-commit Hooks
 
@@ -384,15 +416,17 @@ repos:
         args: [--fix]
 ```
 
-When enabled, the hooks will:
+To enable auto-fix without auto-staging (user preference):
 
-- Report violations (as usual)
+```yaml
+        args: [--fix, --no-stage]
+```
+
+When `--fix` is enabled without `--no-stage`, the hooks will:
+
 - Auto-correct fixable issues and stage them via `git add`
 - Exit with success if all issues were corrected
 - Exit with failure if unfixable violations remain
-
-This allows developers to opt into automatic cleanup on commit rather than
-having it happen by default.
 
 ### Script and Directory Responsibilities
 

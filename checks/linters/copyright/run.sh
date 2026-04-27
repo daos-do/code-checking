@@ -3,6 +3,7 @@
 set -euo pipefail
 
 FIX_MODE=0
+STAGE_MODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../../linter-common.sh"
@@ -13,6 +14,9 @@ for arg in "${LINTER_REMAINING_ARGS[@]}"; do
     --fix)
       FIX_MODE=1
       ;;
+    --no-stage)
+      STAGE_MODE=0
+      ;;
     *)
       echo "Unknown argument: ${arg}" >&2
       exit 2
@@ -21,7 +25,9 @@ for arg in "${LINTER_REMAINING_ARGS[@]}"; do
 done
 linter_require_common_args
 
-NOTICE_PATTERN='^# Copyright [0-9]{4} Hewlett Packard Enterprise Development LP$'
+YEAR_TOKEN='[0-9]{4}(-[0-9]{4})?'
+NOTICE_PATTERN="^# Copyright ${YEAR_TOKEN}([[:space:]]*,[[:space:]]*${YEAR_TOKEN})*"
+NOTICE_PATTERN+=" Hewlett Packard Enterprise Development LP$"
 NOTICE_LINE="# Copyright $(date +%Y) Hewlett Packard Enterprise Development LP"
 
 files_to_check=()
@@ -70,7 +76,9 @@ for file_path in "${files_to_check[@]}"; do
     fi
 
     mv "${tmp_file}" "${absolute_path}"
-    git -C "${TARGET_ROOT}" add -- "${file_path}"
+    if [[ ${STAGE_MODE} -eq 1 ]]; then
+      git -C "${TARGET_ROOT}" add -- "${file_path}"
+    fi
     echo "[copyright] fixed header: ${file_path}"
   else
     echo "[copyright] missing header: ${file_path}" >&2

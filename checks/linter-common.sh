@@ -123,7 +123,8 @@ linter_should_skip_candidate_path() {
   local file_path="$1"
 
   [[ -z "${file_path}" ]] && return 0
-  if [[ -n "${LIB_RELATIVE_PATH}" && "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
+  if [[ -n "${LIB_RELATIVE_PATH}" &&
+    "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
     return 0
   fi
 
@@ -150,7 +151,8 @@ linter_is_shell_script_candidate() {
   # Files without an extension may declare a shell interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?(bash|sh|dash|ksh|zsh)([[:space:]]|$)'; then
+    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?'\
+    '(bash|sh|dash|ksh|zsh)([[:space:]]|$)'; then
     return 0
   fi
 
@@ -225,7 +227,8 @@ linter_is_python_candidate() {
   # Files without an extension may declare a Python interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?python([[:space:]]|$)'; then
+    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?'\
+    'python([[:space:]]|$)'; then
     return 0
   fi
 
@@ -233,13 +236,21 @@ linter_is_python_candidate() {
 }
 
 linter_is_copyright_candidate() {
+  # Scope: program source files only (shell, Python, PowerShell).
+  #
+  # YAML and XML are intentionally excluded. The policy given was to apply
+  # copyright notices to program source, not configuration files. Whether
+  # Ansible YAML files (which are closer to source than configuration) and
+  # XML configuration files should carry notices is an open question pending
+  # a management ruling. Extend this function and update docs/linters.md once
+  # that decision is made.
   local file_path="$1"
   local absolute_path="${TARGET_ROOT}/${file_path}"
 
   [[ -f "${absolute_path}" ]] || return 1
 
   case "${file_path}" in
-    *.sh|*.bash|*.dash|*.ksh|*.zsh|*.ps1|*.psm1|*.psd1|*.py)
+    *.sh|*.ps1|*.psm1|*.psd1|*.py)
       return 0
       ;;
   esac

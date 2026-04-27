@@ -3,8 +3,9 @@
 This guide captures recommended commit message conventions for this
 repository.
 
-Structured commit messages also help review, release notes, and future
-history browsing.
+Consistent commit messages reduce review back-and-forth and make history
+lookups faster. They also support automated release-note generation from
+commit logs when teams choose to adopt it.
 
 ## Format
 
@@ -18,7 +19,7 @@ Recommended structure:
 
 ## Subject Line
 
-- Start with the ticket ID when available (for example: `SRE-3706`).
+- Start with the ticket ID when available (for example: `TKT-1234`).
 - Keep it short and action-oriented.
 - Target about 50 characters when practical.
 - Use imperative style (`Add`, `Fix`, `Update`, `Refactor`).
@@ -27,12 +28,12 @@ Recommended structure:
 Common subject variants:
 
 - `<ticket-id>: <short imperative title>`
-- `<ticket-id>: <area> <short imperative title>`
+- `<ticket-id> <area>: <short imperative title>`
 
 Examples:
 
-- `SRE-3706: Add Python linting with flake8 + pylint`
-- `SRE-3706: Add groovylint and markdownlint`
+- `TKT-1234: Add Python linting with flake8 + pylint`
+- `TKT-1234 linting: Add groovylint and markdownlint`
 
 ## Body
 
@@ -60,29 +61,10 @@ Examples:
 
 Prefer grouped scope summaries over a long unstructured file list.
 
-## Drafting Workflow
-
-For larger commits, draft the message in a local scratch file first, such as:
-
-- `zzz-commit-messages.txt`
-
-Benefits:
-
-- IDE spellcheck can catch typos.
-- Easier line wrapping and wording cleanup before commit.
-- Helpful for collecting validation notes during active review.
-
-Suggested flow:
-
-1. Draft and refine the message in a scratch file.
-2. Commit with `git commit -F <file>` or paste it into the editor.
-3. Keep or trim the scratch notes based on your local workflow.
-
 ## Style Recommendations
 
 - Keep wording factual and concise.
 - Avoid vague phrases like `misc fixes`.
-- Remove stale notes before committing.
 - Keep the subject focused even if the body explains added scope.
 
 ## Signed-off-by Policy
@@ -92,17 +74,6 @@ contributors.
 
 Local group policy is stricter: require `Signed-off-by:` for all commits,
 including employee-authored commits.
-
-Add it automatically with:
-
-```bash
-git commit -s
-```
-
-Meaning:
-
-- `Signed-off-by` is author attestation under DCO-style contribution terms.
-- It does not replace normal review or approval requirements.
 
 ## References
 
