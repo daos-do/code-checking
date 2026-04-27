@@ -3,7 +3,7 @@
 ## Local checks (shell)
 
 ```bash
-bash bin/run-checks.sh
+./bin/run-checks.sh
 ```
 
 ## Local checks (PowerShell)
@@ -15,14 +15,39 @@ pwsh -File ./bin/run-checks.ps1
 ## Local setup (shell)
 
 ```bash
-bash bin/setup-dev.sh
+./bin/setup-dev.sh
 ```
 
+This script:
+
+- Checks for pre-commit and linter tool prerequisites
+- Attempts to install missing tools
+- Initializes pre-commit hooks in your repository
+
 ## Local setup (PowerShell)
+
+On Windows, run `bootstrap-windows-dev.ps1` first to install the bash runtime,
+`pre-commit`, and other required tools. Re-run it if major changes have been
+made to this `code_checking` repository and you need to refresh the local
+tooling setup. This is normally a one-time setup per Windows system, not
+something you need to repeat for each Visual Studio Code instance:
+
+```powershell
+pwsh -File ./bin/bootstrap-windows-dev.ps1
+```
+
+Then run:
 
 ```powershell
 pwsh -File ./bin/setup-dev.ps1
 ```
+
+This script is a PowerShell preflight wrapper that delegates to
+`setup-dev.sh` through WSL bash (preferred) or Git Bash.
+
+If neither runtime is present, it exits with install guidance. In the normal
+Windows setup flow, that means `bootstrap-windows-dev.ps1` has not been run
+yet or did not complete successfully.
 
 ## Local scratch files
 
@@ -97,7 +122,7 @@ Non-Windows shells can use `bootstrap-python.sh` to verify that Python 3 is
 available before running setup.
 
 ```bash
-bash ./code_checking/bin/bootstrap-python.sh
+./code_checking/bin/bootstrap-python.sh
 ```
 
 CI validation on Windows (no installs):
@@ -112,7 +137,8 @@ but the ide-workspace-setup.py script only knows about what settings are
 in the recommended settings YAML file.
 
 ```bash
-cp ./code_checking/ide/reference/recommended_settings.yml ./local_ide_settings.yml
+cp ./code_checking/ide/reference/recommended_settings.yml \
+   ./local_ide_settings.yml
 ```
 
 Then edit `./local_ide_settings.yml` and adjust:
@@ -124,7 +150,8 @@ Then edit `./local_ide_settings.yml` and adjust:
 Setup command names:
 
 - Windows: `python .\code_checking\bin\ide-workspace-setup.py` (dry run)
-- Non-Windows shells: `bash ./code_checking/bin/ide-workspace-setup.sh` (dry run)
+- Non-Windows shells:
+  `./code_checking/bin/ide-workspace-setup.sh` (dry run)
 - Add `--apply` to perform a live write
 
 Examples:
@@ -135,8 +162,8 @@ python .\code_checking\bin\ide-workspace-setup.py --apply
 ```
 
 ```bash
-bash ./code_checking/bin/ide-workspace-setup.sh
-bash ./code_checking/bin/ide-workspace-setup.sh --apply
+./code_checking/bin/ide-workspace-setup.sh
+./code_checking/bin/ide-workspace-setup.sh --apply
 ```
 
 Note: `ide-workspace-setup` merges into any existing `.vscode/settings.json`

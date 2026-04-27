@@ -1,0 +1,28 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+name: checks
+
+on:
+  pull_request:
+
+jobs:
+  basic-source-checks:
+    name: Basic Source checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck codespell
+
+      - name: Block tracked code-checking-ref
+        run: ./checks/guard-code-checking-ref.sh --target-root .
+
+      - name: Run linters on changed files
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: ./bin/run-linters.sh

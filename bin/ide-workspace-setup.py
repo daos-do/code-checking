@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 import argparse
 import importlib
 import json
@@ -187,6 +188,30 @@ def normalize_rulers(rulers):
     return [by_column[col] for col in sorted(by_column)]
 
 
+def canonicalize_shellcheck_settings(settings_obj):
+    """Keep one canonical shellcheck key style.
+
+    VS Code accepts both dotted and nested key styles. Preserve dotted keys
+    as canonical output and collapse duplicate nested values created by merge.
+    If both styles define a value for the same sub-key and they differ,
+    preserve the dotted value and report the conflict.
+    """
+    nested_key = "shellcheck"
+
+    if nested_key in settings_obj and isinstance(settings_obj[nested_key], dict):
+        nested = settings_obj[nested_key]
+        for sub_key, sub_value in nested.items():
+            dotted_key = f"shellcheck.{sub_key}"
+            if dotted_key not in settings_obj:
+                settings_obj[dotted_key] = sub_value
+            elif settings_obj[dotted_key] != sub_value:
+                print(
+                    "[ide-workspace-setup] WARNING: conflicting shellcheck "
+                    f"settings for '{sub_key}'; preserving dotted key value"
+                )
+        settings_obj.pop(nested_key, None)
+
+
 def find_code_cli():
     if os.name == "nt":
         code_cmd = shutil.which("code.cmd")
@@ -353,7 +378,6 @@ def copy_linter_configs(target_root, repo_root, apply):
     """Copy linter config files from repo_root to target_root if missing."""
     # List of common linter/formatter config files to copy
     linter_files = [
-        ".shellcheckrc",
         ".pylintrc",
         ".flake8",
         ".yamllint",
@@ -409,7 +433,7 @@ def main(argv):
 
     # Start from any existing workspace settings so nothing is lost.
     # Merge order (each step can add/override the previous):
-    #   existing .vscode/settings.json  →  repo baseline  →  local YAML
+    #   existing .vscode/settings.json -> repo baseline -> local YAML
     existing_settings = {}
     if os.path.exists(out_settings):
         try:
@@ -430,6 +454,8 @@ def main(argv):
     rulers = merged_settings.get("editor", {}).get("rulers")
     if isinstance(rulers, list):
         merged_settings["editor"]["rulers"] = normalize_rulers(rulers)
+
+    canonicalize_shellcheck_settings(merged_settings)
 
     # Build extension list: existing + baseline + selected YAML config,
     # deduped and order-preserving.

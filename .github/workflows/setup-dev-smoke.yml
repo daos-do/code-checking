@@ -1,0 +1,23 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+name: setup-dev smoke test
+
+on:
+  pull_request:
+
+jobs:
+  smoke:
+    name: setup-dev (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run setup-dev
+        run: ./bin/setup-dev.sh

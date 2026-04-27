@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 set -euo pipefail
 
 echo "[bootstrap-python] checking for Python 3 runtime"

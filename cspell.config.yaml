@@ -1,3 +1,4 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
 version: '0.2'
 language: en
 useGitignore: true

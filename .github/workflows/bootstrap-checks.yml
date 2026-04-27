@@ -1,17 +1,15 @@
-name: bootstrap-checks
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+name: bootstrap-validation
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
 
 jobs:
   validate-bootstrap:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Linux setup prerequisites
         run: |
@@ -19,7 +17,7 @@ jobs:
           sudo apt-get install -y python3-yaml
 
       - name: Run bootstrap checks
-        run: bash bin/run-checks.sh
+        run: ./bin/run-checks.sh
 
       - name: Smoke test Python setup engine
         run: |
@@ -36,13 +34,13 @@ jobs:
         run: |
           mkdir -p tmp-ci-shell-workspace
           cd tmp-ci-shell-workspace
-          bash ../bin/ide-workspace-setup.sh
+          ../bin/ide-workspace-setup.sh
 
   validate-windows-bootstrap:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate Windows bootstrap prerequisites
         shell: pwsh

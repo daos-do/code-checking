@@ -1,0 +1,22 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+repos:
+  - repo: local
+    hooks:
+      - id: forbid-code-checking-ref
+        name: forbid tracked code-checking-ref
+        entry: checks/guard-code-checking-ref.sh --target-root .
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+        require_serial: true
+      - id: basic-source-linters
+        name: basic source linters
+        entry: bin/run-linters.sh --mode changed --target-root .
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+        require_serial: false
+        # Optional: Enable auto-fix for applicable linters
+        # args: [--fix]
