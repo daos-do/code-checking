@@ -10,7 +10,7 @@ repos:
         always_run: true
         stages: [commit]
         require_serial: true
-      - id: shellcheck
+      - id: basic-source-linters
         name: basic source linters
         entry: bin/run-linters.sh --mode changed --target-root .
         language: script

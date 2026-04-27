@@ -68,7 +68,7 @@ git submodule update --init --recursive
 Update to latest:
 
 ```bash
-git submodule update --remote code_checkingF
+git submodule update --remote code_checking
 git add code_checking
 git commit -m "Update code_checking submodule"
 ```

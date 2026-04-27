@@ -9,7 +9,7 @@
   stages: [commit]
   require_serial: true
 
-- id: shellcheck
+- id: basic-source-linters
   name: basic source linters
   description: Runs selected changed-file linters (supports --fix for applicable checks)
   entry: bin/run-linters.sh --mode changed
