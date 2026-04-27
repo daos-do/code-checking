@@ -156,3 +156,34 @@ linter_is_shell_script_candidate() {
 
   return 1
 }
+
+linter_is_groovy_candidate() {
+  local file_path="$1"
+  local base_name="${file_path##*/}"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.groovy|*.gradle|Jenkinsfile*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+linter_is_markdown_candidate() {
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.md|*.markdown)
+      return 0
+      ;;
+  esac
+
+  return 1
+}

@@ -140,8 +140,8 @@ For routine updates to a new main tip, see [README.md](../README.md#update-to-la
 For background on submodule update behavior and remote-tracking refs, see the
 official Git documentation:
 
-- https://git-scm.com/docs/git-submodule
-- https://git-scm.com/docs/git-fetch
+- [git submodule docs](https://git-scm.com/docs/git-submodule)
+- [git fetch docs](https://git-scm.com/docs/git-fetch)
 
 ## Scope
 

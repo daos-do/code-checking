@@ -24,6 +24,13 @@ This script:
 - Attempts to install missing tools
 - Initializes pre-commit hooks in your repository
 
+For the current baseline linters, automatic setup may install platform
+packages such as `shellcheck`, `codespell`, and `npm`, then use `npm` to add
+`npm-groovy-lint` when Groovy or Jenkins files are present.
+
+On Ubuntu WSL targets, Node-based lint setup expects both `nodejs` and `npm`
+to be installed together to avoid partial npm-only setups.
+
 ## Local setup (PowerShell)
 
 On Windows, run `bootstrap-windows-dev.ps1` first to install the bash runtime,

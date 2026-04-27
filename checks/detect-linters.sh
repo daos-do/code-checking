@@ -11,6 +11,8 @@ linter_fail_on_unknown_args
 linter_require_common_args
 
 shellcheck_needed=0
+groovylint_needed=0
+markdownlint_needed=0
 codespell_needed=0
 text_hygiene_needed=0
 filename_portability_needed=0
@@ -24,10 +26,24 @@ while IFS= read -r file_path; do
   if linter_is_shell_script_candidate "${file_path}"; then
     shellcheck_needed=1
   fi
+
+  if linter_is_groovy_candidate "${file_path}"; then
+    groovylint_needed=1
+  fi
+
+  if linter_is_markdown_candidate "${file_path}"; then
+    markdownlint_needed=1
+  fi
 done < <(linter_get_candidate_files_acmr)
 
 if [[ ${shellcheck_needed} -eq 1 ]]; then
   echo 'shellcheck'
+fi
+if [[ ${groovylint_needed} -eq 1 ]]; then
+  echo 'groovylint'
+fi
+if [[ ${markdownlint_needed} -eq 1 ]]; then
+  echo 'markdownlint'
 fi
 if [[ ${codespell_needed} -eq 1 ]]; then
   echo 'codespell'
