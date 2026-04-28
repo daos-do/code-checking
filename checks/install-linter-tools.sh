@@ -378,7 +378,7 @@ fi
 if printf '%s\n' "${REQUIRED_LINTERS[@]}" | grep -Fxq 'groovylint'; then
   INSTALLED_GROOVY_LINT_VERSION=""
   if command -v npm-groovy-lint >/dev/null 2>&1 && ensure_groovylint_command_works; then
-    INSTALLED_GROOVY_LINT_VERSION="$({ npm-groovy-lint --version || true; } \
+    INSTALLED_GROOVY_LINT_VERSION="$({ npm-groovy-lint --version 2>/dev/null || true; } \
       | awk '/npm-groovy-lint version/{print $NF; exit}')"
   fi
 
