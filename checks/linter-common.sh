@@ -136,6 +136,9 @@ linter_is_shell_script_candidate() {
   local absolute_path="${TARGET_ROOT}/${file_path}"
   local base_name="${file_path##*/}"
   local first_line=""
+  local shell_shebang_regex='^#![[:space:]]*([^[:space:]]+/)?'
+  shell_shebang_regex+='(env([[:space:]]+-S)?[[:space:]]+)?'
+  shell_shebang_regex+='(bash|sh|dash|ksh|zsh)([[:space:]]|$)'
 
   [[ -f "${absolute_path}" ]] || return 1
 
@@ -151,8 +154,7 @@ linter_is_shell_script_candidate() {
   # Files without an extension may declare a shell interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?'\
-    '(bash|sh|dash|ksh|zsh)([[:space:]]|$)'; then
+    "${shell_shebang_regex}"; then
     return 0
   fi
 
@@ -209,6 +211,9 @@ linter_is_python_candidate() {
   local file_path="$1"
   local absolute_path="${TARGET_ROOT}/${file_path}"
   local first_line=""
+  local python_shebang_regex='^#![[:space:]]*([^[:space:]]+/)?'
+  python_shebang_regex+='(env([[:space:]]+-S)?[[:space:]]+)?'
+  python_shebang_regex+='python([[:space:]]|$)'
 
   [[ -f "${absolute_path}" ]] || return 1
 
@@ -227,8 +232,7 @@ linter_is_python_candidate() {
   # Files without an extension may declare a Python interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?'\
-    'python([[:space:]]|$)'; then
+    "${python_shebang_regex}"; then
     return 0
   fi
 
