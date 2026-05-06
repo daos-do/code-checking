@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
 
@@ -22,6 +22,9 @@ jobs:
 
       - name: Block tracked code-checking-ref
         run: ./checks/guard-code-checking-ref.sh --target-root .
+
+      - name: Block active Jenkins shared-library branch pin
+        run: ./checks/guard-jenkins-library-pin.sh --target-root .
 
       - name: Run linters on changed files
         env:

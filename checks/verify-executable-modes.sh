@@ -47,8 +47,8 @@ done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
 
-if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree \
-  >/dev/null 2>&1; then
+if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1
+then
   echo "[verify-exec-mode] target is not a git working tree: ${TARGET_ROOT}" >&2
   exit 2
 fi

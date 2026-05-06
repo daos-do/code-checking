@@ -34,5 +34,22 @@ if [[ ${#files_to_check[@]} -eq 0 ]]; then
 fi
 
 echo "[python] linting ${#files_to_check[@]} file(s)"
-flake8 "${files_to_check[@]}"
-pylint "${files_to_check[@]}"
+
+flake8_rc=0
+pylint_rc=0
+
+if flake8 "${files_to_check[@]}"; then
+  :
+else
+  flake8_rc=$?
+fi
+
+if pylint "${files_to_check[@]}"; then
+  :
+else
+  pylint_rc=$?
+fi
+
+if [[ ${flake8_rc} -ne 0 || ${pylint_rc} -ne 0 ]]; then
+  exit 1
+fi

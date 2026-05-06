@@ -140,8 +140,8 @@ install_python_package() {
       ;;
     # On non-Linux systems, allow user-scoped pip fallback (macOS, etc.)
     *)
-      if [[ "$(uname -s)" == "Darwin" ]] &&
-        command -v brew >/dev/null 2>&1; then
+      if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1;
+      then
         echo "[setup-dev] installing $pkg_name via homebrew..."
         brew install "$pkg_name"
         return $?

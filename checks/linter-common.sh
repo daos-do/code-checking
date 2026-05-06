@@ -66,8 +66,11 @@ linter_fail_on_unknown_args() {
 
 linter_get_candidate_files_acmr() {
   if [[ "${MODE}" == "full" ]]; then
-    # Normalize `find` output to match git path style (no leading `./`).
-    (cd "${TARGET_ROOT}" && find . -type f -print | sed 's#^./##')
+    {
+      cd "${TARGET_ROOT}" || return
+      git ls-files
+      git ls-files --others --exclude-standard
+    } | sort -u
     return
   fi
 
@@ -124,7 +127,7 @@ linter_should_skip_candidate_path() {
 
   [[ -z "${file_path}" ]] && return 0
   if [[ -n "${LIB_RELATIVE_PATH}" &&
-    "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
+        "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
     return 0
   fi
 
@@ -153,8 +156,8 @@ linter_is_shell_script_candidate() {
 
   # Files without an extension may declare a shell interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
-  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    "${shell_shebang_regex}"; then
+  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq "${shell_shebang_regex}"
+  then
     return 0
   fi
 
@@ -231,8 +234,8 @@ linter_is_python_candidate() {
 
   # Files without an extension may declare a Python interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
-  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    "${python_shebang_regex}"; then
+  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq "${python_shebang_regex}"
+  then
     return 0
   fi
 

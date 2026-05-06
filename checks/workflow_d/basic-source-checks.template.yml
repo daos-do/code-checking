@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           submodules: recursive
           fetch-depth: 0
@@ -63,17 +63,33 @@ jobs:
           ./__CODE_CHECKING_PATH__/checks/guard-code-checking-ref.sh \
             --target-root .
 
+      - name: Block active Jenkins shared-library branch pin
+        id: guard_jenkins_library_pin
+        continue-on-error: true
+        run: |
+          ./__CODE_CHECKING_PATH__/checks/guard-jenkins-library-pin.sh \
+            --target-root .
+
       - name: Run linters on changed files
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         run: ./__CODE_CHECKING_PATH__/bin/run-linters.sh
 
-      - name: Fail if code-checking-ref is tracked
+      - name: Fail if any guard check failed
         if: >-
           ${{ always() &&
-              steps.guard_code_checking_ref.outcome == 'failure' }}
+              (steps.guard_code_checking_ref.outcome == 'failure' ||
+               steps.guard_jenkins_library_pin.outcome == 'failure') }}
         run: |
-          echo "[workflow] code-checking-ref was tracked in this change" >&2
+          echo "[workflow] one or more guard checks failed" >&2
+          if [ "${{ steps.guard_code_checking_ref.outcome }}" = \
+               "failure" ]; then
+            echo "[workflow] code-checking-ref was tracked in this change" >&2
+          fi
+          if [ "${{ steps.guard_jenkins_library_pin.outcome }}" = \
+               "failure" ]; then
+            echo "[workflow] active Jenkins branch pin found" >&2
+          fi
           echo "[workflow] keeping the final job status failed after" >&2
           echo "[workflow] running the remaining checks" >&2
           exit 1

@@ -157,21 +157,6 @@ Current policy alignment:
 - Local group policy applies the notice consistently across covered files,
   with `--fix` available to insert missing headers.
 
-Current scope is **program source files only**: shell scripts, Python, and
-PowerShell. YAML and XML files are not currently checked.
-
-Open questions pending management ruling:
-
-- Should Ansible YAML playbooks/roles (program logic, not configuration) carry
-  copyright notices?
-- Should XML configuration files used in the project carry notices?
-
-Extend `linter_is_copyright_candidate` in `checks/linter-common.sh` and update
-this section once those decisions are made.
-
-On Linux/macOS targets, preflight failures include install hints for common
-package managers.
-
 ### Spelling-Friendly Naming
 
 For new shell variable names and labels, prefer underscore-separated words when

@@ -1,0 +1,9 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+---
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

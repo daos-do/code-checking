@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2026 Hewlett Packard Enterprise Development LP
+# pylint: disable=invalid-name
+"""Generate and apply VS Code workspace settings from YAML inputs."""
 import argparse
 import importlib
 import json
@@ -8,20 +10,23 @@ import shutil
 import subprocess
 import sys
 
+# Filename is intentionally hyphenated to match existing CLI conventions.
+
 
 def ensure_yaml_module():
     """Return imported PyYAML module, installing it on demand if missing."""
     try:
         return importlib.import_module("yaml")
-    except ImportError:
+    except ImportError as exc:
         if os.name != "nt":
             raise SystemExit(
                 "Missing dependency: PyYAML. On non-Windows platforms, "
                 "install the distro package first (for example: "
                 "python3-yaml / PyYAML), then rerun setup."
-            )
+            ) from exc
         print(
-            "[ide-workspace-setup] PyYAML not found; attempting bootstrap install via pip"
+            "[ide-workspace-setup] PyYAML not found; attempting bootstrap "
+            "install via pip"
         )
         install = subprocess.run(
             [
@@ -32,25 +37,30 @@ def ensure_yaml_module():
                 "--disable-pip-version-check",
                 "pyyaml",
             ],
+            check=False,
             capture_output=True,
             text=True,
         )
         if install.returncode != 0:
             details = "\n".join(
-                part for part in (install.stdout.strip(), install.stderr.strip()) if part
+                part
+                for part in (install.stdout.strip(), install.stderr.strip())
+                if part
             )
             raise SystemExit(
                 "Missing dependency: PyYAML and bootstrap install failed. "
                 "Install with 'python -m pip install pyyaml'.\n"
                 + details
-            )
+            ) from exc
         return importlib.import_module("yaml")
 
 
 yaml = ensure_yaml_module()
 
 
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def parse_yaml(path):
+    """Parse setup YAML and return normalized configuration values."""
     result = {
         "vscode_settings": {},
         "vscode_extensions": [],
@@ -75,18 +85,31 @@ def parse_yaml(path):
     if vscode and not isinstance(vscode, dict):
         raise SystemExit("Invalid YAML: 'ide.vscode' must be a mapping")
 
-    settings = vscode.get("settings", {}) if isinstance(vscode, dict) else {}
+    settings = (
+        vscode.get("settings", {}) if isinstance(vscode, dict) else {}
+    )
     if settings and not isinstance(settings, dict):
-        raise SystemExit("Invalid YAML: 'ide.vscode.settings' must be a mapping")
+        raise SystemExit(
+            "Invalid YAML: 'ide.vscode.settings' must be a mapping"
+        )
     result["vscode_settings"] = settings
 
-    extensions = vscode.get("extensions", {}) if isinstance(vscode, dict) else {}
+    extensions = (
+        vscode.get("extensions", {}) if isinstance(vscode, dict) else {}
+    )
     if extensions and not isinstance(extensions, dict):
-        raise SystemExit("Invalid YAML: 'ide.vscode.extensions' must be a mapping")
-    recommendations = extensions.get("recommendations", []) if isinstance(extensions, dict) else []
+        raise SystemExit(
+            "Invalid YAML: 'ide.vscode.extensions' must be a mapping"
+        )
+    recommendations = (
+        extensions.get("recommendations", [])
+        if isinstance(extensions, dict)
+        else []
+    )
     if recommendations and not isinstance(recommendations, list):
         raise SystemExit(
-            "Invalid YAML: 'ide.vscode.extensions.recommendations' must be a list"
+            "Invalid YAML: 'ide.vscode.extensions.recommendations' "
+            "must be a list"
         )
     result["vscode_extensions"] = recommendations
 
@@ -108,11 +131,14 @@ def parse_yaml(path):
     pkg_sources = doc.get("packageSources", {})
     if pkg_sources:
         if not isinstance(pkg_sources, dict):
-            raise SystemExit("Invalid YAML: 'packageSources' must be a mapping")
+            raise SystemExit(
+                "Invalid YAML: 'packageSources' must be a mapping"
+            )
         allow_untrusted = pkg_sources.get("allowUncertifiedSources", False)
         if not isinstance(allow_untrusted, bool):
             raise SystemExit(
-                "Invalid YAML: 'packageSources.allowUncertifiedSources' must be boolean"
+                "Invalid YAML: "
+                "'packageSources.allowUncertifiedSources' must be boolean"
             )
         allowed_sources = pkg_sources.get("allowedSources", [])
         if allowed_sources and not isinstance(allowed_sources, list):
@@ -129,14 +155,19 @@ def parse_yaml(path):
         setup_python = setup.get("python", {})
         if setup_python:
             if not isinstance(setup_python, dict):
-                raise SystemExit("Invalid YAML: 'setup.python' must be a mapping")
+                raise SystemExit(
+                    "Invalid YAML: 'setup.python' must be a mapping"
+                )
             packages = setup_python.get("packages", [])
             if packages and not isinstance(packages, list):
-                raise SystemExit("Invalid YAML: 'setup.python.packages' must be a list")
+                raise SystemExit(
+                    "Invalid YAML: 'setup.python.packages' must be a list"
+                )
             for pkg in packages:
                 if not isinstance(pkg, str):
                     raise SystemExit(
-                        "Invalid YAML: each 'setup.python.packages' entry must be a string"
+                        "Invalid YAML: each 'setup.python.packages' entry "
+                        "must be a string"
                     )
             result["python_packages"] = packages
 
@@ -144,6 +175,7 @@ def parse_yaml(path):
 
 
 def read_json(path):
+    """Read and parse a UTF-8 JSON file."""
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -156,9 +188,17 @@ def deep_merge(base, overlay):
     - All other values in overlay replace the corresponding base value.
     """
     for key, value in overlay.items():
-        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+        if (
+            key in base
+            and isinstance(base[key], dict)
+            and isinstance(value, dict)
+        ):
             deep_merge(base[key], value)
-        elif key in base and isinstance(base[key], list) and isinstance(value, list):
+        elif (
+            key in base
+            and isinstance(base[key], list)
+            and isinstance(value, list)
+        ):
             existing = base[key]
             for item in value:
                 if item not in existing:
@@ -181,10 +221,10 @@ def normalize_rulers(rulers):
         if isinstance(entry, int):
             col = entry
             if col not in by_column:
-                by_column[col] = entry          # plain int as default
+                by_column[col] = entry  # plain int as default
         elif isinstance(entry, dict) and "column" in entry:
             col = entry["column"]
-            by_column[col] = entry              # dict always beats plain int
+            by_column[col] = entry  # dict always beats plain int
     return [by_column[col] for col in sorted(by_column)]
 
 
@@ -198,7 +238,10 @@ def canonicalize_shellcheck_settings(settings_obj):
     """
     nested_key = "shellcheck"
 
-    if nested_key in settings_obj and isinstance(settings_obj[nested_key], dict):
+    if (
+        nested_key in settings_obj
+        and isinstance(settings_obj[nested_key], dict)
+    ):
         nested = settings_obj[nested_key]
         for sub_key, sub_value in nested.items():
             dotted_key = f"shellcheck.{sub_key}"
@@ -213,6 +256,7 @@ def canonicalize_shellcheck_settings(settings_obj):
 
 
 def find_code_cli():
+    """Return the VS Code CLI executable path if available."""
     if os.name == "nt":
         code_cmd = shutil.which("code.cmd")
         if code_cmd:
@@ -221,7 +265,7 @@ def find_code_cli():
 
 
 def ensure_python_packages(package_list, apply):
-    """Ensure Python packages are installed in the current interpreter env."""
+    """Ensure Python packages are installed in the current interpreter."""
     seen = set()
     ordered = []
     for pkg in package_list:
@@ -236,7 +280,8 @@ def ensure_python_packages(package_list, apply):
     for pkg in ordered:
         if os.name != "nt" and pkg.lower() == "pyyaml":
             print(
-                "[ide-workspace-setup] non-Windows platform: skipping pip install "
+                "[ide-workspace-setup] non-Windows platform: "
+                "skipping pip install "
                 "for pyyaml; prefer distro package management"
             )
             continue
@@ -250,15 +295,19 @@ def ensure_python_packages(package_list, apply):
                     "--disable-pip-version-check",
                     pkg,
                 ],
+                check=False,
                 capture_output=True,
                 text=True,
             )
             if result.returncode != 0:
                 details = "\n".join(
-                    part for part in (result.stdout.strip(), result.stderr.strip()) if part
+                    part
+                    for part in (result.stdout.strip(), result.stderr.strip())
+                    if part
                 )
                 print(
-                    f"[ide-workspace-setup] WARNING: failed to install Python package {pkg}: "
+                    "[ide-workspace-setup] WARNING: failed to install "
+                    f"Python package {pkg}: "
                     + details
                 )
             else:
@@ -267,7 +316,9 @@ def ensure_python_packages(package_list, apply):
             print(f"[ide-workspace-setup] would ensure Python package: {pkg}")
 
 
+# pylint: disable=too-many-branches
 def install_extensions(ext_list, dry_run):
+    """Install recommended VS Code extensions when running in apply mode."""
     code_cmd = find_code_cli()
     if not code_cmd:
         print(
@@ -285,6 +336,7 @@ def install_extensions(ext_list, dry_run):
     if not dry_run:
         result = subprocess.run(
             [code_cmd, "--list-extensions"],
+            check=False,
             capture_output=True,
             text=True,
         )
@@ -307,30 +359,35 @@ def install_extensions(ext_list, dry_run):
             else:
                 result = subprocess.run(
                     [code_cmd, "--install-extension", ext],
+                    check=False,
                     capture_output=True,
                     text=True,
                 )
                 combined_output = "\n".join(
-                    part for part in (result.stdout.strip(), result.stderr.strip()) if part
+                    part
+                    for part in (result.stdout.strip(), result.stderr.strip())
+                    if part
                 )
                 if "already installed" in combined_output.lower():
                     print(f"[ide-workspace-setup] already installed: {ext}")
                 elif "failed installing extensions" in combined_output.lower():
                     print(
-                        f"[ide-workspace-setup] WARNING: install failed for {ext}: "
+                        "[ide-workspace-setup] WARNING: install failed for "
+                        f"{ext}: "
                         + combined_output
                     )
                 elif result.returncode != 0:
                     print(
-                        f"[ide-workspace-setup] WARNING: install failed for {ext}: "
+                        "[ide-workspace-setup] WARNING: install failed for "
+                        f"{ext}: "
                         + combined_output
                     )
                 else:
                     print(f"[ide-workspace-setup] installed: {ext}")
 
 
-def ensure_cspell_config(target_root, repo_root, apply):
-    """Create cspell.config.yaml and project word list if they do not exist."""
+def ensure_cspell_config(target_root, apply):
+    """Create cspell config and project word list when missing."""
     project_words = os.path.join(target_root, "vscode-project-words.txt")
     cspell_config = os.path.join(target_root, "cspell.config.yaml")
 
@@ -401,13 +458,17 @@ def copy_linter_configs(target_root, repo_root, apply):
                 print(f"[ide-workspace-setup] would copy: {filename}")
 
 
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def main(argv):
+    """Entrypoint for dry-run/apply workspace setup operations."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--config", default="")
     args = parser.parse_args(argv)
 
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+    repo_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), os.pardir)
+    )
     target_root = os.getcwd()
     default_yaml = os.path.join(target_root, "local_ide_settings.yml")
     reference_yaml = os.path.join(
@@ -422,7 +483,9 @@ def main(argv):
 
     cfg = parse_yaml(config_path)
     if cfg["pre_commit_mode"] not in ("selected", "none", "all"):
-        raise SystemExit("Invalid pre_commit_mode: expected selected|none|all")
+        raise SystemExit(
+            "Invalid pre_commit_mode: expected selected|none|all"
+        )
 
     baseline_cfg = parse_yaml(reference_yaml)
     baseline_settings = baseline_cfg["vscode_settings"]
@@ -438,7 +501,7 @@ def main(argv):
     if os.path.exists(out_settings):
         try:
             existing_settings = read_json(out_settings)
-        except Exception:
+        except (OSError, ValueError, json.JSONDecodeError):
             print(
                 f"[ide-workspace-setup] WARNING: could not read existing "
                 f"{out_settings}; starting from baseline only"
@@ -462,9 +525,10 @@ def main(argv):
     existing_recommendations = []
     if os.path.exists(out_ext):
         try:
-            existing_recommendations = read_json(
-                out_ext).get("recommendations", [])
-        except Exception:
+            existing_recommendations = read_json(out_ext).get(
+                "recommendations", []
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
             pass
 
     ext_ordered = list(existing_recommendations)
@@ -483,7 +547,11 @@ def main(argv):
     )
     print(
         "[ide-workspace-setup] lint profiles: "
-        + (", ".join(cfg["lint_profiles"]) if cfg["lint_profiles"] else "(none)")
+        + (
+            ", ".join(cfg["lint_profiles"])
+            if cfg["lint_profiles"]
+            else "(none)"
+        )
     )
     print(f"[ide-workspace-setup] pre-commit mode: {cfg['pre_commit_mode']}")
 
@@ -500,14 +568,14 @@ def main(argv):
         print(f"[ide-workspace-setup] applied settings: {out_settings}")
         print(f"[ide-workspace-setup] applied extensions: {out_ext}")
         install_extensions(ext_ordered, dry_run=False)
-        ensure_cspell_config(target_root, repo_root, apply=True)
+        ensure_cspell_config(target_root, apply=True)
         copy_linter_configs(target_root, repo_root, apply=True)
     else:
         print("[ide-workspace-setup] DRY RUN (no files written)")
         print(f"[ide-workspace-setup] would write: {out_settings}")
         print(f"[ide-workspace-setup] would write: {out_ext}")
         install_extensions(ext_ordered, dry_run=True)
-        ensure_cspell_config(target_root, repo_root, apply=False)
+        ensure_cspell_config(target_root, apply=False)
         copy_linter_configs(target_root, repo_root, apply=False)
 
     print(
