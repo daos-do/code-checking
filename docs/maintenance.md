@@ -74,7 +74,8 @@ if any of the check steps fail (guard, executable modes, or linters).
 **To verify the guard works:**
 
 1. Create a test branch from `main`.
-2. Create a local `code-checking-ref` file with content: `origin/some-branch`
+2. Create a local `code-checking-ref` file with content: `pull/123/head`
+   (or any valid git ref)
 3. Commit and push:
 
    ```bash

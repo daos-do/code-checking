@@ -87,14 +87,16 @@ done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
 
-if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1
+then
   echo "[sync-consumer] target is not a git repository: ${TARGET_ROOT}" >&2
   exit 2
 fi
 
 if [[ "${LIB_ROOT}" == "${TARGET_ROOT}" ]]; then
-  echo "[sync-consumer] target root is the code_checking repository itself" >&2
-  echo "[sync-consumer] run this from a consumer repository that vendors code_checking as a submodule" >&2
+  echo "[sync-consumer] target root is the code_checking repository" >&2
+  echo "[sync-consumer] run this from a consumer repository that" >&2
+  echo "[sync-consumer] vendors code_checking as a submodule" >&2
   exit 2
 fi
 
@@ -140,7 +142,8 @@ resolve_ref() {
   elif [[ "${desired_ref}" == origin/* ]]; then
     local branch="${desired_ref#origin/}"
     candidates+=("refs/heads/${branch}" "${branch}")
-  elif [[ "${desired_ref}" == pull/*/head || "${desired_ref}" == pull/*/merge ]]; then
+  elif [[ "${desired_ref}" == pull/*/head || "${desired_ref}" == pull/*/merge ]]
+  then
     candidates+=("refs/${desired_ref}" "${desired_ref}")
   else
     candidates+=("refs/heads/${desired_ref}" "${desired_ref}")
@@ -149,7 +152,9 @@ resolve_ref() {
   local candidate=""
   local out=""
   for candidate in "${candidates[@]}"; do
-    if out="$(git -C "${LIB_ROOT}" ls-remote --exit-code origin "${candidate}" 2>/dev/null)"; then
+    if out="$(git -C "${LIB_ROOT}" ls-remote --exit-code \
+      origin "${candidate}" 2>/dev/null)"
+    then
       desired_sha="$(awk 'NR==1 {print $1}' <<< "${out}")"
       resolved_from="${candidate}"
       [[ -n "${desired_sha}" ]] && break
@@ -163,17 +168,21 @@ resolve_ref() {
   printf '%s\n%s\n' "${desired_sha}" "${resolved_from}"
 }
 
-mapfile -t resolved_info < <(resolve_ref "${DESIRED_REF}") || {
-  echo "[sync-consumer] unable to resolve desired ref '${DESIRED_REF}' from origin" >&2
+mapfile -t resolved_info < <(resolve_ref "${DESIRED_REF}")
+
+if [[ ${#resolved_info[@]} -lt 2 ]] || [[ -z "${resolved_info[0]}" ]]; then
+  echo "[sync-consumer] unable to resolve ref '${DESIRED_REF}'" >&2
+  echo "[sync-consumer] from origin" >&2
   exit 1
-}
+fi
 
 DESIRED_SHA="${resolved_info[0]}"
 RESOLVED_FROM="${resolved_info[1]}"
 CURRENT_SHA="$(git -C "${LIB_ROOT}" rev-parse HEAD)"
 
 if [[ "${CURRENT_SHA}" != "${DESIRED_SHA}" ]]; then
-  echo "[sync-consumer] syncing ${SUBMODULE_PATH} to ${DESIRED_REF} (${RESOLVED_FROM})"
+  echo "[sync-consumer] syncing ${SUBMODULE_PATH}" \
+    "to ${DESIRED_REF} (${RESOLVED_FROM})"
   if [[ "${DESIRED_REF}" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
     git -C "${LIB_ROOT}" fetch origin "${DESIRED_REF}"
     git -C "${LIB_ROOT}" checkout "${DESIRED_REF}"
@@ -182,7 +191,8 @@ if [[ "${CURRENT_SHA}" != "${DESIRED_SHA}" ]]; then
     git -C "${LIB_ROOT}" checkout FETCH_HEAD
   fi
 else
-  echo "[sync-consumer] ${SUBMODULE_PATH} already matches ${DESIRED_REF} (${CURRENT_SHA:0:12})"
+  echo "[sync-consumer] ${SUBMODULE_PATH} matches" \
+    "${DESIRED_REF} (${CURRENT_SHA:0:12})"
 fi
 
 if [[ "${REFRESH_WORKFLOW}" == true ]]; then
@@ -204,7 +214,8 @@ if [[ "${REFRESH_PRE_COMMIT}" == true ]]; then
       echo "[sync-consumer] pre-commit not installed; skipping hook refresh" >&2
     fi
   else
-    echo "[sync-consumer] no .pre-commit-config.yaml in target root; skipping hook refresh"
+    echo "[sync-consumer] no .pre-commit-config.yaml in target" >&2
+    echo "[sync-consumer] root; skipping hook refresh" >&2
   fi
 fi
 
@@ -218,7 +229,8 @@ if [[ "${UPDATE_README}" == true ]]; then
 This repository uses the shared \`code_checking\` submodule.
 
 - Framework documentation: [code_checking README](./${SUBMODULE_PATH}/README.md)
-- Integration guide: [code_checking integration](./${SUBMODULE_PATH}/docs/integration.md)
+- Integration guide:
+  [code_checking integration](./${SUBMODULE_PATH}/docs/integration.md)
 
 ${END_MARKER}"
 
@@ -267,7 +279,8 @@ if [[ ! -f "${TARGET_ROOT}/cspell.config.yaml" ]]; then
   CSPELL_CONFIG_BASELINE="${LIB_ROOT}/cspell.config.yaml"
   if [[ -f "${CSPELL_CONFIG_BASELINE}" ]]; then
     cp "${CSPELL_CONFIG_BASELINE}" "${TARGET_ROOT}/cspell.config.yaml"
-    echo "[sync-consumer] created cspell.config.yaml from code_checking baseline"
+    echo "[sync-consumer] created cspell.config.yaml" \
+      "from code_checking baseline"
   else
     echo "[sync-consumer] baseline not found: ${CSPELL_CONFIG_BASELINE}" >&2
   fi
@@ -287,7 +300,8 @@ if [[ ! -f "${TARGET_ROOT}/vscode-project-words.txt" ]]; then
   CSPELL_WORDS_BASELINE="${LIB_ROOT}/vscode-project-words.txt"
   if [[ -f "${CSPELL_WORDS_BASELINE}" ]]; then
     cp "${CSPELL_WORDS_BASELINE}" "${TARGET_ROOT}/vscode-project-words.txt"
-    echo "[sync-consumer] created vscode-project-words.txt from code_checking baseline"
+    echo "[sync-consumer] created vscode-project-words.txt" \
+      "from code_checking baseline"
   else
     echo "[sync-consumer] baseline not found: ${CSPELL_WORDS_BASELINE}" >&2
   fi
