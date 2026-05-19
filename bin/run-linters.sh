@@ -175,6 +175,10 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
         linter_rc=$?
       fi
       ;;
+    python)
+      run_args=("${run_args_common[@]}")
+      "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"
+      ;;
     codespell)
       run_args=("${run_args_common[@]}")
       if "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"; then
