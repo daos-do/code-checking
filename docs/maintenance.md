@@ -185,7 +185,7 @@ tracked and maintained in this repository.
 - Workflow `uses:` entries are pinned to full commit SHAs.
 - This is required to satisfy OpenSSF Scorecard `Pinned-Dependencies` checks.
 - Include the corresponding version tag as an inline YAML comment when useful
-   for readability (for example, `# v5`).
+   for readability (for example, `# v6.0.2`).
 
 ### Manual Review Cadence
 

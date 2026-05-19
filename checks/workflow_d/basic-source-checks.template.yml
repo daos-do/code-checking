@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
           ./__CODE_CHECKING_PATH__/checks/guard-code-checking-ref.sh \
             --target-root .
 
-      - name: Block active Jenkins shared-library branch pin
+      - name: Block active Jenkins @Library reference
         id: guard_jenkins_library_pin
         continue-on-error: true
         run: |
@@ -88,7 +88,7 @@ jobs:
           fi
           if [ "${{ steps.guard_jenkins_library_pin.outcome }}" = \
                "failure" ]; then
-            echo "[workflow] active Jenkins branch pin found" >&2
+            echo "[workflow] active Jenkins @Library reference found" >&2
           fi
           echo "[workflow] keeping the final job status failed after" >&2
           echo "[workflow] running the remaining checks" >&2

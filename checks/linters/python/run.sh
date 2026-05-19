@@ -38,15 +38,11 @@ echo "[python] linting ${#files_to_check[@]} file(s)"
 flake8_rc=0
 pylint_rc=0
 
-if flake8 "${files_to_check[@]}"; then
-  :
-else
+if ! flake8 "${files_to_check[@]}"; then
   flake8_rc=$?
 fi
 
-if pylint "${files_to_check[@]}"; then
-  :
-else
+if ! pylint "${files_to_check[@]}"; then
   pylint_rc=$?
 fi
 

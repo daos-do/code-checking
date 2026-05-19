@@ -8,12 +8,12 @@ usage() {
   cat <<'EOF'
 Usage: guard-jenkins-library-pin.sh --target-root PATH
 
-Fails when an active Jenkins shared-library pin is present, such as:
-  @Library(value="system-pipeline-lib@my_pr_branch") _
+Fails when an active Jenkins shared-library reference is present, such as:
+  @Library("my-shared-lib") _
 
 Rationale:
-- branch-pinned Jenkins shared library references are for temporary testing
-- pinned refs must not be landed in mergeable branches
+- live @Library references are for PR/testing workflows only
+- @Library references must not be landed in mergeable branches
 EOF
 }
 
@@ -58,27 +58,51 @@ if [[ ${#JENKINS_FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
-pin_regex='^[[:space:]]*@Library[[:space:]]*\('
-pin_regex+='(value[[:space:]]*=[[:space:]]*)?["'"'"']'
-pin_regex+='system-pipeline-lib@[^"'"'"']+["'"'"'][[:space:]]*\)'
-pin_regex+='[[:space:]]*_[[:space:]]*($|//.*$)'
+library_regex='@Library[[:space:]]*\('
 
 guard_failed=0
 for rel_path in "${JENKINS_FILES[@]}"; do
   abs_path="${TARGET_ROOT}/${rel_path}"
   [[ -f "${abs_path}" ]] || continue
 
-  if LC_ALL=C grep -nE "${pin_regex}" "${abs_path}" >/dev/null 2>&1; then
+  mapfile -t library_hits < <(
+    LC_ALL=C awk -v pattern="${library_regex}" '
+      {
+        line = $0
+
+        # Ignore single-line comments and block-comment boundaries.
+        if (line ~ /^[[:space:]]*\/\//) {
+          next
+        }
+        if (line ~ /^[[:space:]]*\/\*/) {
+          in_block_comment = 1
+          next
+        }
+        if (in_block_comment) {
+          if (line ~ /\*\//) {
+            in_block_comment = 0
+          }
+          next
+        }
+
+        if (line ~ pattern) {
+          print NR ":" line
+        }
+      }
+    ' "${abs_path}"
+  )
+
+  if [[ ${#library_hits[@]} -gt 0 ]]; then
     guard_failed=1
-    echo "[jenkins-library-pin-guard] blocked: branch pin in ${rel_path}" >&2
-    LC_ALL=C grep -nE "${pin_regex}" "${abs_path}" >&2 || true
+    echo "[jenkins-library-pin-guard] blocked: active @Library reference in ${rel_path}" >&2
+    printf '%s\n' "${library_hits[@]}" >&2
   fi
 done
 
 if [[ ${guard_failed} -ne 0 ]]; then
-  echo "[jenkins-library-pin-guard] remove system-pipeline-lib" >&2
-  echo "[jenkins-library-pin-guard] @<branch> pins before landing" >&2
+  echo "[jenkins-library-pin-guard] remove active @Library references" >&2
+  echo "[jenkins-library-pin-guard] before landing to mergeable branches" >&2
   exit 1
 fi
 
-echo "[jenkins-library-pin-guard] ok: no active branch pins found"
+echo "[jenkins-library-pin-guard] ok: no active @Library references found"

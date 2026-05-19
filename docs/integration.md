@@ -218,7 +218,7 @@ Recommended behavior for consumer workflows:
 Example:
 
 ```yaml
-- uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+- uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
   with:
     submodules: recursive
     fetch-depth: 0
@@ -263,10 +263,9 @@ Example step:
 
 This allows normal local override usage while still allowing intentional
 validation PRs that temporarily track `code-checking-ref`, without hiding the
-results of later checks. It also blocks active Jenkins branch-pinned shared
-library lines such as
-`@Library(value="system-pipeline-lib@my_pr_branch") _` from landing. Guards
-still leave the final job status failed so the PR cannot merge accidentally.
+results of later checks. It also blocks active Jenkins shared-library
+references such as `@Library("my-shared-lib") _` from landing. Guards still
+leave the final job status failed so the PR cannot merge accidentally.
 
 Example GitHub Actions job:
 
@@ -276,7 +275,7 @@ jobs:
     name: Basic Source checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           fetch-depth: 0
@@ -302,7 +301,7 @@ jobs:
         run: |
           bash ./code_checking/checks/guard-code-checking-ref.sh \
             --target-root .
-      - name: Block active Jenkins shared-library branch pin
+      - name: Block active Jenkins @Library reference
         id: guard_jenkins_library_pin
         continue-on-error: true
         run: |

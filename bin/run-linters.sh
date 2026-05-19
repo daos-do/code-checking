@@ -123,41 +123,32 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
   case "${linter}" in
     shellcheck)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
     groovylint)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/groovylint/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/groovylint/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
     markdownlint)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}";
+      then
         linter_rc=$?
       fi
       ;;
     yamllint)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/yamllint/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/yamllint/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
     python)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
@@ -169,21 +160,13 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
           run_args+=(--no-stage)
         fi
       fi
-      if "${LIB_ROOT}/checks/linters/copyright/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/copyright/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
-    python)
-      run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"
-      ;;
     codespell)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"; then
         linter_rc=$?
       fi
       ;;
@@ -195,17 +178,15 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
           run_args+=(--no-stage)
         fi
       fi
-      if "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}";
+      then
         linter_rc=$?
       fi
       ;;
     filename-portability)
       run_args=("${run_args_common[@]}")
-      if "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}"; then
-        :
-      else
+      if ! "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}";
+      then
         linter_rc=$?
       fi
       ;;
