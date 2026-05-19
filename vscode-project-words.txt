@@ -21,6 +21,7 @@ nicolasvuillamy
 nonblank
 Pipenv
 pyenv
+pylint
 pylintrc
 pyproject
 pyyaml

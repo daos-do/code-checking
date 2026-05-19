@@ -142,12 +142,12 @@ linter_is_shell_script_candidate() {
     return 0
   fi
 
-  # Files without an extension may still be shell scripts when they
-  # declare a shell interpreter in a shebang line.
+  # Files with any extension are linted by their extension only.
   if [[ "${base_name}" == *.* ]]; then
     return 1
   fi
 
+  # Files without an extension may declare a shell interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
   if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
     '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?(bash|sh|dash|ksh|zsh)([[:space:]]|$)'; then
@@ -184,6 +184,35 @@ linter_is_markdown_candidate() {
       return 0
       ;;
   esac
+
+  return 1
+}
+
+linter_is_python_candidate() {
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+  local first_line=""
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.py)
+      return 0
+      ;;
+  esac
+
+  # Files with any extension are linted by their extension only.
+  local base_name="${file_path##*/}"
+  if [[ "${base_name}" == *.* ]]; then
+    return 1
+  fi
+
+  # Files without an extension may declare a Python interpreter via a shebang.
+  IFS= read -r first_line < "${absolute_path}" || true
+  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
+    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?python([[:space:]]|$)'; then
+    return 0
+  fi
 
   return 1
 }

@@ -250,6 +250,7 @@ for linter in "${REQUIRED_LINTERS[@]}"; do
     shellcheck)   PACKAGES+=("shellcheck") ;;
     groovylint)   PACKAGES+=("npm") ;;
     markdownlint) PACKAGES+=("npm") ;;
+    python)       PACKAGES+=("flake8" "pylint") ;;
     codespell)    PACKAGES+=("codespell")  ;;
     *)            continue                 ;;
   esac
@@ -321,12 +322,29 @@ else
 
       LINUX_PACKAGES=()
       for package in "${MISSING_PACKAGES[@]}"; do
-        if [[ "${package}" == "npm" ]]; then
-          # Ubuntu/WSL reliability: install both nodejs and npm together.
-          LINUX_PACKAGES+=("nodejs" "npm")
-        else
-          LINUX_PACKAGES+=("${package}")
-        fi
+        case "${package}" in
+          npm)
+            # Ubuntu/WSL reliability: install both nodejs and npm together.
+            LINUX_PACKAGES+=("nodejs" "npm")
+            ;;
+          flake8)
+            if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+              LINUX_PACKAGES+=("python3-flake8")
+            else
+              LINUX_PACKAGES+=("flake8")
+            fi
+            ;;
+          pylint)
+            if command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+              LINUX_PACKAGES+=("python3-pylint")
+            else
+              LINUX_PACKAGES+=("pylint")
+            fi
+            ;;
+          *)
+            LINUX_PACKAGES+=("${package}")
+            ;;
+        esac
       done
 
       if command -v apt-get >/dev/null 2>&1; then
