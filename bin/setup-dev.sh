@@ -7,26 +7,42 @@ CODE_CHECKING_PATH=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+escape_sed_replacement() {
+  printf '%s' "$1" | sed -e 's/[&|]/\\&/g'
+}
+
 usage() {
   echo "Usage: setup-dev.sh [--target-root PATH] [--code-checking-path PATH]"
   echo
-  echo "Checks local prerequisites and installs or refreshes pre-commit hooks in the"
+  echo "Checks local prerequisites and installs or refreshes pre-commit"
+  echo "hooks in the"
   echo "target repository."
   echo
   echo "Defaults:"
   echo "- target root: current directory"
   echo
   echo "Required for bootstrap:"
-  echo "- --code-checking-path must be provided when .pre-commit-config.yaml is missing"
+  echo "- --code-checking-path must be provided when"
+  echo "  .pre-commit-config.yaml is missing"
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target-root)
+      if [[ $# -lt 2 || -z "${2}" || "${2}" == --* ]]; then
+        echo "Missing value for $1" >&2
+        usage >&2
+        exit 2
+      fi
       TARGET_ROOT="$2"
       shift 2
       ;;
     --code-checking-path)
+      if [[ $# -lt 2 || -z "${2}" || "${2}" == --* ]]; then
+        echo "Missing value for $1" >&2
+        usage >&2
+        exit 2
+      fi
       CODE_CHECKING_PATH="$2"
       shift 2
       ;;
@@ -53,8 +69,17 @@ create_pre_commit_config_if_missing() {
   echo "[setup-dev] no .pre-commit-config.yaml found. Creating..."
 
   if [[ -z "${CODE_CHECKING_PATH}" ]]; then
-    echo "[setup-dev] unable to locate code_checking path from ${TARGET_ROOT}" >&2
-    echo "[setup-dev] provide --code-checking-path (for example: code_checking or .)" >&2
+    # Auto-detect when invoked via a vendored code_checking submodule.
+    if [[ "${LIB_ROOT}/" == "${TARGET_ROOT}/"* ]]; then
+      CODE_CHECKING_PATH="${LIB_ROOT#"${TARGET_ROOT}/"}"
+    fi
+  fi
+
+  if [[ -z "${CODE_CHECKING_PATH}" ]]; then
+    echo "[setup-dev] unable to locate code_checking path from" \
+      "${TARGET_ROOT}" >&2
+    echo "[setup-dev] provide --code-checking-path" \
+      "(for example: code_checking or .)" >&2
     return 1
   fi
 
@@ -68,27 +93,18 @@ create_pre_commit_config_if_missing() {
     hook_prefix="./${code_checking_path}"
   fi
 
-  {
-    printf '%s\n' 'repos:'
-    printf '%s\n' '  - repo: local'
-    printf '%s\n' '    hooks:'
-    printf '%s\n' '      - id: forbid-code-checking-ref'
-    printf '%s\n' '        name: forbid tracked code-checking-ref'
-    printf '%s\n' "        entry: ${hook_prefix}/checks/guard-code-checking-ref.sh --target-root ."
-    printf '%s\n' '        language: script'
-    printf '%s\n' '        pass_filenames: false'
-    printf '%s\n' '        always_run: true'
-    printf '%s\n' '        stages: [commit]'
-    printf '%s\n' '        require_serial: true'
-    printf '%s\n' '      - id: shellcheck'
-    printf '%s\n' '        name: shellcheck'
-    printf '%s\n' "        entry: ${hook_prefix}/bin/run-linters.sh --mode changed --target-root ."
-    printf '%s\n' '        language: script'
-    printf '%s\n' '        pass_filenames: false'
-    printf '%s\n' '        types: [shell]'
-    printf '%s\n' '        stages: [commit]'
-    printf '%s\n' '        require_serial: false'
-  } > "${config_path}"
+  local template_path="${LIB_ROOT}/checks/pre-commit_d/"
+  template_path+="pre-commit-config.template.yaml"
+  if [[ ! -f "${template_path}" ]]; then
+    echo "[setup-dev] missing template: ${template_path}" >&2
+    return 1
+  fi
+
+  local escaped_hook_prefix=""
+  escaped_hook_prefix="$(escape_sed_replacement "${hook_prefix}")"
+
+  sed "s|__HOOK_PREFIX__|${escaped_hook_prefix}|g" \
+    "${template_path}" > "${config_path}"
 
   echo "[setup-dev] created .pre-commit-config.yaml using ${hook_prefix} hooks"
 }
@@ -124,7 +140,8 @@ install_python_package() {
       ;;
     # On non-Linux systems, allow user-scoped pip fallback (macOS, etc.)
     *)
-      if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1; then
+      if [[ "$(uname -s)" == "Darwin" ]] && command -v brew >/dev/null 2>&1;
+      then
         echo "[setup-dev] installing $pkg_name via homebrew..."
         brew install "$pkg_name"
         return $?
@@ -132,7 +149,8 @@ install_python_package() {
 
       if [[ "$(id -u)" -eq 0 ]]; then
         echo "[setup-dev] refusing to install $pkg_name with pip as root" >&2
-        echo "[setup-dev] use system package manager when possible; otherwise rerun as non-root" >&2
+        echo "[setup-dev] use system package manager when possible;" \
+          "otherwise rerun as non-root" >&2
         return 1
       fi
       if command -v python3 >/dev/null 2>&1; then
@@ -148,7 +166,8 @@ install_python_package() {
         pip install --user "$pkg_name"
         return $?
       else
-        echo "[setup-dev] no supported automatic installer found; install $pkg_name manually" >&2
+        echo "[setup-dev] no supported automatic installer found;" \
+          "install $pkg_name manually" >&2
         return 1
       fi
       ;;
@@ -172,14 +191,16 @@ if ! "${LIB_ROOT}/checks/install-linter-tools.sh" \
   --target-root "${TARGET_ROOT}" \
   --mode full; then
   echo "[setup-dev] note: unable to auto-install one or more linter tools" >&2
-  echo "[setup-dev] continuing; lint checks may fail until tools are installed" >&2
+  echo "[setup-dev] continuing; lint checks may fail until tools are" \
+    "installed" >&2
 fi
 
 if ! create_pre_commit_config_if_missing; then
   exit 1
 fi
 
-if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+if ! git -C "${TARGET_ROOT}" rev-parse --is-inside-work-tree \
+  >/dev/null 2>&1; then
   echo "[setup-dev] target is not a git repository: ${TARGET_ROOT}" >&2
   exit 1
 fi

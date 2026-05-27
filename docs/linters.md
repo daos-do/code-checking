@@ -61,7 +61,19 @@ The changed-file linter set currently includes:
 - `groovylint` (Groovy and Jenkins DSL linting for `*.groovy`, `*.gradle`,
   and `Jenkinsfile*`)
 - `markdownlint` (Markdown linting for `*.md` and `*.markdown`)
+- `yamllint` (YAML linting for `*.yml`, `*.yaml`, and `.yamllint`)
 - `python` (shared Python linting for `*.py` using `flake8` and `pylint`)
+- `copyright` (copyright header check for script/source files)
+
+Fix-capable checks currently support `--fix`:
+
+- `verify-executable-modes` (sets executable mode in git index for shebang
+  files)
+- `text-hygiene` (trailing whitespace and final newline fixes)
+- `copyright` (missing header insertion)
+
+When `--fix` is enabled, fixes are staged by default. Use `--no-stage` to
+apply fixes without auto-staging.
 
 Groovylint execution also includes a post-lint guard that rejects implicit
 script-binding assignments (bare `name = value` at statement start) to prevent
@@ -125,9 +137,25 @@ Current tool preflight mapping:
   the Current Linters section above)
 - `python` linter requires both `flake8` and `pylint` on PATH and runs both
   tools against the same changed Python file set
+- `yamllint` linter requires `yamllint` on PATH
+- `copyright` linter does not require an external executable and validates
+  `# Copyright <years> Hewlett Packard Enterprise Development LP` headers in
+  candidate files
 
-On Linux/macOS targets, preflight failures include install hints for common
-package managers.
+### Copyright Header Policy
+
+The `copyright` linter enforces the repository header format below for
+candidate script/source files:
+
+- `# Copyright <years> Hewlett Packard Enterprise Development LP`
+
+Where `<years>` supports compact lists/ranges such as `2024,2026-2027`.
+
+Current policy alignment:
+
+- HPE baseline policy requires this notice for covered contribution content.
+- Local group policy applies the notice consistently across covered files,
+  with `--fix` available to insert missing headers.
 
 ### Spelling-Friendly Naming
 
@@ -291,10 +319,10 @@ ShellCheck-specific guidance:
   in that case use a local
   `shellcheck disable=...` with a short rationale comment
 
-## Required Checks in GitHub
+## Enforcing Required Checks in GitHub
 
-Configure branch protection in consumer repositories to require the following
-status check before merging:
+For public repositories configure branch protection in consumer repositories
+to require the following status check before merging:
 
 - **`Basic Source checks`** — the single job that runs the guard, executable
   mode verification, and all linters.
@@ -341,11 +369,20 @@ Use `--fix` from the command line:
 ./bin/run-linters.sh --fix
 ```
 
+By default `--fix` also stages corrected files via `git add`. To apply fixes
+without staging (for example to review changes before staging manually), add
+`--no-stage`:
+
+```bash
+./bin/run-linters.sh --fix --no-stage
+```
+
 Current fix coverage:
 
 - Shell script executable mode bits (for files with a shebang)
 - Trailing whitespace
 - Missing final newline
+- Copyright header insertion
 
 #### Pre-commit Hooks
 
@@ -364,15 +401,17 @@ repos:
         args: [--fix]
 ```
 
-When enabled, the hooks will:
+To enable auto-fix without auto-staging (user preference):
 
-- Report violations (as usual)
+```yaml
+        args: [--fix, --no-stage]
+```
+
+When `--fix` is enabled without `--no-stage`, the hooks will:
+
 - Auto-correct fixable issues and stage them via `git add`
 - Exit with success if all issues were corrected
 - Exit with failure if unfixable violations remain
-
-This allows developers to opt into automatic cleanup on commit rather than
-having it happen by default.
 
 ### Script and Directory Responsibilities
 

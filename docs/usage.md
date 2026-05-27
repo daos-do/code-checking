@@ -69,6 +69,12 @@ Examples:
 Root-level `zzz-*` files are ignored by the repository `.gitignore` and are not
 intended to be committed.
 
+For commit message structure and formatting guidance, see
+[docs/git-commit-message-guidelines.md](docs/git-commit-message-guidelines.md).
+For local policy requirements, see Signed-off usage in
+[docs/git-commit-message-guidelines.md](docs/git-commit-message-guidelines.md)
+and copyright header policy in [docs/linters.md](docs/linters.md).
+
 ## IDE customization design
 
 See [docs/ide-customization.md](docs/ide-customization.md) for the

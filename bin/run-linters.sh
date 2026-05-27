@@ -8,11 +8,12 @@ TARGET_ROOT="$(pwd)"
 MODE="changed"
 BASE_REF="${GITHUB_BASE_REF:-}"
 FIX_MODE=0
+STAGE_MODE=1
 
 usage() {
   cat <<'EOF'
 Usage: run-linters.sh [--target-root PATH] [--mode changed|full] \
-                      [--base-ref REF] [--fix]
+                      [--base-ref REF] [--fix] [--no-stage]
 
 Runs applicable linters for the target repository.
 
@@ -21,6 +22,7 @@ Runs applicable linters for the target repository.
 - In a consumer repository, run this from the consumer root via the submodule
   path.
 - --fix enables auto-fix for linters that support it.
+- --no-stage suppresses automatic git staging of fixed files.
 EOF
 }
 
@@ -42,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       FIX_MODE=1
       shift
       ;;
+    --no-stage)
+      STAGE_MODE=0
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -61,11 +67,17 @@ echo "[linters] target root: ${TARGET_ROOT}"
 echo "[linters] mode: ${MODE}"
 if [[ ${FIX_MODE} -eq 1 ]]; then
   echo "[linters] fix mode: enabled"
+  if [[ ${STAGE_MODE} -eq 0 ]]; then
+    echo "[linters] staging: disabled"
+  fi
 fi
 
 verify_args=(--target-root "${TARGET_ROOT}")
 if [[ ${FIX_MODE} -eq 1 ]]; then
   verify_args+=(--fix)
+  if [[ ${STAGE_MODE} -eq 0 ]]; then
+    verify_args+=(--no-stage)
+  fi
 fi
 "${LIB_ROOT}/checks/verify-executable-modes.sh" "${verify_args[@]}"
 
@@ -104,44 +116,94 @@ if [[ -n "${BASE_REF}" ]]; then
   run_args_common+=(--base-ref "${BASE_REF}")
 fi
 
+failed_linters=()
+
 for linter in "${REQUIRED_LINTERS[@]}"; do
+  linter_rc=0
   case "${linter}" in
     shellcheck)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/shellcheck/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
       ;;
     groovylint)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/groovylint/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/groovylint/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
       ;;
     markdownlint)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/markdownlint/run.sh" "${run_args[@]}";
+      then
+        linter_rc=$?
+      fi
+      ;;
+    yamllint)
+      run_args=("${run_args_common[@]}")
+      if ! "${LIB_ROOT}/checks/linters/yamllint/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
       ;;
     python)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/python/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
+      ;;
+    copyright)
+      run_args=("${run_args_common[@]}")
+      if [[ ${FIX_MODE} -eq 1 ]]; then
+        run_args+=(--fix)
+        if [[ ${STAGE_MODE} -eq 0 ]]; then
+          run_args+=(--no-stage)
+        fi
+      fi
+      if ! "${LIB_ROOT}/checks/linters/copyright/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
       ;;
     codespell)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/codespell/run.sh" "${run_args[@]}"; then
+        linter_rc=$?
+      fi
       ;;
     text-hygiene)
       run_args=("${run_args_common[@]}")
       if [[ ${FIX_MODE} -eq 1 ]]; then
         run_args+=(--fix)
+        if [[ ${STAGE_MODE} -eq 0 ]]; then
+          run_args+=(--no-stage)
+        fi
       fi
-      "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/text-hygiene/run.sh" "${run_args[@]}";
+      then
+        linter_rc=$?
+      fi
       ;;
     filename-portability)
       run_args=("${run_args_common[@]}")
-      "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}"
+      if ! "${LIB_ROOT}/checks/linters/filename-portability/run.sh" "${run_args[@]}";
+      then
+        linter_rc=$?
+      fi
       ;;
     *)
       echo "Unknown linter selected: ${linter}" >&2
       exit 2
       ;;
   esac
+
+  if [[ ${linter_rc} -ne 0 ]]; then
+    failed_linters+=("${linter}")
+  fi
 done
+
+if [[ ${#failed_linters[@]} -gt 0 ]]; then
+  echo "[linters] failed linters: ${failed_linters[*]}" >&2
+  exit 1
+fi
 
 echo "[linters] complete"

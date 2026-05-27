@@ -1,7 +1,8 @@
 # Copyright 2026 Hewlett Packard Enterprise Development LP
+---
 name: checks
 
-on:
+'on':
   pull_request:
 
 jobs:
@@ -10,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -21,6 +22,9 @@ jobs:
 
       - name: Block tracked code-checking-ref
         run: ./checks/guard-code-checking-ref.sh --target-root .
+
+      - name: Block active Jenkins @Library reference
+        run: ./checks/guard-jenkins-library-pin.sh --target-root .
 
       - name: Run linters on changed files
         env:

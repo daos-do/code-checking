@@ -66,7 +66,8 @@ git -C code_checking fetch origin
 git submodule update --remote code_checking
 ```
 
-For the staging and commit details, see [README.md](../README.md#initial-consumer-commit).
+For the staging and commit details, see
+[README.md](../README.md#initial-consumer-commit).
 
 Do not stage `code-checking-ref` for normal integration commits. It will
 usually remain visible in `git status` as an untracked file. The pre-commit
@@ -135,7 +136,8 @@ Use `--no-verify` only if your consumer PR intentionally tracks
 The `--no-verify` bypass is acceptable here because the guard hook is
 protecting against accidental commits; the PR is intentional.
 
-For routine updates to a new main tip, see [README.md](../README.md#update-to-latest).
+For routine updates to a new main tip, see
+[README.md](../README.md#update-to-latest).
 
 For background on submodule update behavior and remote-tracking refs, see the
 official Git documentation:
@@ -216,7 +218,7 @@ Recommended behavior for consumer workflows:
 Example:
 
 ```yaml
-- uses: actions/checkout@v5
+- uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
   with:
     submodules: recursive
     fetch-depth: 0
@@ -239,27 +241,31 @@ Example:
     git -C ./code_checking checkout FETCH_HEAD
 ```
 
-## Preventing Accidental PR Overrides
+## Preventing Accidental PR and Jenkins Override Landings
 
 Recommended guardrail for consumer repositories:
 
 1. Use the same guard script in both pre-commit and GitHub Actions:
   `./code_checking/checks/guard-code-checking-ref.sh`.
-2. Add a guard step in the same workflow job that runs shared checks.
-3. Let the guard record failure without stopping later checks, then fail the
+2. Add a Jenkins landing guard in GitHub Actions:
+  `./code_checking/checks/guard-jenkins-library-pin.sh`.
+3. Add guard steps in the same workflow job that runs shared checks.
+4. Let guards record failure without stopping later checks, then fail the
   job at the end if the guard tripped.
-4. Require only that single stable checks job in repository rules.
+5. Require only that single stable checks job in repository rules.
 
 Example step:
 
 ```bash
 ./code_checking/checks/guard-code-checking-ref.sh --target-root .
+./code_checking/checks/guard-jenkins-library-pin.sh --target-root .
 ```
 
 This allows normal local override usage while still allowing intentional
 validation PRs that temporarily track `code-checking-ref`, without hiding the
-results of later checks. The guard still leaves the final job status failed so
-the PR cannot merge accidentally.
+results of later checks. It also blocks active Jenkins shared-library
+references such as `@Library("my-shared-lib") _` from landing. Guards still
+leave the final job status failed so the PR cannot merge accidentally.
 
 Example GitHub Actions job:
 
@@ -269,7 +275,7 @@ jobs:
     name: Basic Source checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           fetch-depth: 0
@@ -295,16 +301,23 @@ jobs:
         run: |
           bash ./code_checking/checks/guard-code-checking-ref.sh \
             --target-root .
+      - name: Block active Jenkins @Library reference
+        id: guard_jenkins_library_pin
+        continue-on-error: true
+        run: |
+          bash ./code_checking/checks/guard-jenkins-library-pin.sh \
+            --target-root .
       - name: Verify executable modes
         run: |
           bash ./code_checking/checks/verify-executable-modes.sh \
             --target-root .
       - name: Run shared linters
         run: bash ./code_checking/bin/run-linters.sh
-      - name: Fail if code-checking-ref is tracked
+      - name: Fail if any guard check failed
         if: >-
           ${{ always() &&
-              steps.guard_code_checking_ref.outcome == 'failure' }}
+              (steps.guard_code_checking_ref.outcome == 'failure' ||
+               steps.guard_jenkins_library_pin.outcome == 'failure') }}
         run: exit 1
 ```
 

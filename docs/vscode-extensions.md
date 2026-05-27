@@ -124,12 +124,14 @@ Some extensions require specific software packages to be installed on the host.
 #### `ms-vscode-remote.remote-ssh`
 
 - **Publisher:** Microsoft
-- **Purpose:** SSH client integration for working on remote Linux hosts, lab systems, etc.
+- **Purpose:** SSH client integration for working on remote Linux hosts,
+  lab systems, etc.
 - **Platform Notes:**
   - Windows:
     - Can use Windows built-in SSH (Windows 10+) if configured.
     - Can use Git for Windows SSH client as an alternative.
-    - Does NOT support Pageant or other third-party SSH agents in older versions.
+    - Does NOT support Pageant or other third-party SSH agents in older
+      versions.
   - macOS/Linux: Uses native SSH client.
   - **Important:** Direct access to lab hosts may require:
     - Fully qualified domain names (FQDN) for host discovery.
@@ -144,7 +146,8 @@ Some extensions require specific software packages to be installed on the host.
 #### `ms-vscode.makefile-tools`
 
 - **Publisher:** Microsoft
-- **Purpose:** Makefile support including syntax highlighting, task integration, and debugging.
+- **Purpose:** Makefile support including syntax highlighting, task
+  integration, and debugging.
 - **Related Dependencies:** None (standalone).
 
 #### `ms-vscode.powershell`
@@ -161,14 +164,24 @@ Some extensions require specific software packages to be installed on the host.
 These extensions are automatically installed as dependencies of the direct installs
 above. **Do not install these separately.**
 
-| Extension | Installed As Dependency Of | Purpose |
-| --------- | ------------------------- | ------- |
-| `ms-python.debugpy` | `ms-python.python` | Python runtime debugging support. |
-| `ms-python.vscode-pylance` | `ms-python.python` | Pylance language server for advanced type checking. |
-| `ms-python.vscode-python-envs` | `ms-python.python` | Automatic Python environment detection and management. |
-| `ms-python.isort` | `ms-python.python` | Optional: Python import sorting. |
-| `ms-vscode-remote.remote-ssh-edit` | `ms-vscode-remote.remote-ssh` | SSH file editing and remote path handling. |
-| `ms-vscode.remote-explorer` | Remote SSH/WSL | Unified explorer UI for remote connections. |
+- `ms-python.debugpy`
+  - Installed as dependency of: `ms-python.python`
+  - Purpose: Python runtime debugging support.
+- `ms-python.vscode-pylance`
+  - Installed as dependency of: `ms-python.python`
+  - Purpose: Pylance language server for advanced type checking.
+- `ms-python.vscode-python-envs`
+  - Installed as dependency of: `ms-python.python`
+  - Purpose: Automatic Python environment detection and management.
+- `ms-python.isort`
+  - Installed as dependency of: `ms-python.python`
+  - Purpose: Optional Python import sorting.
+- `ms-vscode-remote.remote-ssh-edit`
+  - Installed as dependency of: `ms-vscode-remote.remote-ssh`
+  - Purpose: SSH file editing and remote path handling.
+- `ms-vscode.remote-explorer`
+  - Installed as dependency of: Remote SSH/WSL
+  - Purpose: Unified explorer UI for remote connections.
 
 ---
 

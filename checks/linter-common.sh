@@ -66,8 +66,11 @@ linter_fail_on_unknown_args() {
 
 linter_get_candidate_files_acmr() {
   if [[ "${MODE}" == "full" ]]; then
-    # Normalize `find` output to match git path style (no leading `./`).
-    (cd "${TARGET_ROOT}" && find . -type f -print | sed 's#^./##')
+    {
+      cd "${TARGET_ROOT}" || return
+      git ls-files
+      git ls-files --others --exclude-standard
+    } | sort -u
     return
   fi
 
@@ -123,7 +126,8 @@ linter_should_skip_candidate_path() {
   local file_path="$1"
 
   [[ -z "${file_path}" ]] && return 0
-  if [[ -n "${LIB_RELATIVE_PATH}" && "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
+  if [[ -n "${LIB_RELATIVE_PATH}" &&
+        "${file_path}" == "${LIB_RELATIVE_PATH}"/* ]]; then
     return 0
   fi
 
@@ -135,6 +139,9 @@ linter_is_shell_script_candidate() {
   local absolute_path="${TARGET_ROOT}/${file_path}"
   local base_name="${file_path##*/}"
   local first_line=""
+  local shell_shebang_regex='^#![[:space:]]*([^[:space:]]+/)?'
+  shell_shebang_regex+='(env([[:space:]]+-S)?[[:space:]]+)?'
+  shell_shebang_regex+='(bash|sh|dash|ksh|zsh)([[:space:]]|$)'
 
   [[ -f "${absolute_path}" ]] || return 1
 
@@ -149,8 +156,8 @@ linter_is_shell_script_candidate() {
 
   # Files without an extension may declare a shell interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
-  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?(bash|sh|dash|ksh|zsh)([[:space:]]|$)'; then
+  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq "${shell_shebang_regex}"
+  then
     return 0
   fi
 
@@ -188,10 +195,28 @@ linter_is_markdown_candidate() {
   return 1
 }
 
+linter_is_yaml_candidate() {
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.yml|*.yaml|.yamllint|.ansible-lint)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 linter_is_python_candidate() {
   local file_path="$1"
   local absolute_path="${TARGET_ROOT}/${file_path}"
   local first_line=""
+  local python_shebang_regex='^#![[:space:]]*([^[:space:]]+/)?'
+  python_shebang_regex+='(env([[:space:]]+-S)?[[:space:]]+)?'
+  python_shebang_regex+='python([[:space:]]|$)'
 
   [[ -f "${absolute_path}" ]] || return 1
 
@@ -209,8 +234,39 @@ linter_is_python_candidate() {
 
   # Files without an extension may declare a Python interpreter via a shebang.
   IFS= read -r first_line < "${absolute_path}" || true
-  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq \
-    '^#![[:space:]]*([^[:space:]]+/)?(env([[:space:]]+-S)?[[:space:]]+)?python([[:space:]]|$)'; then
+  if printf '%s\n' "${first_line}" | LC_ALL=C grep -Eq "${python_shebang_regex}"
+  then
+    return 0
+  fi
+
+  return 1
+}
+
+linter_is_copyright_candidate() {
+  # Scope: program source files only (shell, Python, PowerShell).
+  #
+  # YAML and XML are intentionally excluded. The policy given was to apply
+  # copyright notices to program source, not configuration files. Whether
+  # Ansible YAML files (which are closer to source than configuration) and
+  # XML configuration files should carry notices is an open question pending
+  # a management ruling. Extend this function and update docs/linters.md once
+  # that decision is made.
+  local file_path="$1"
+  local absolute_path="${TARGET_ROOT}/${file_path}"
+
+  [[ -f "${absolute_path}" ]] || return 1
+
+  case "${file_path}" in
+    *.sh|*.ps1|*.psm1|*.psd1|*.py)
+      return 0
+      ;;
+  esac
+
+  # Files without an extension may still declare supported script types.
+  if linter_is_shell_script_candidate "${file_path}"; then
+    return 0
+  fi
+  if linter_is_python_candidate "${file_path}"; then
     return 0
   fi
 
