@@ -69,8 +69,6 @@ Update to latest:
 
 ```bash
 git submodule update --remote code_checking
-git add code_checking
-git commit -m "Update code_checking submodule"
 ```
 
 Consumer repositories keep:
@@ -117,6 +115,25 @@ managed section. It also seeds baseline `.gitignore`,
 consumer root when those files are missing. Running `sync-consumer` means you
 do not need to run `setup-github-workflow.sh` separately.
 
+After `sync-consumer` completes, commit all integration files in a single commit
+using the site commit message standards from
+[docs/git-commit-message-guidelines.md](docs/git-commit-message-guidelines.md).
+Example commit message format:
+
+```text
+TKT-XXXX: Add code-checking submodule integration
+
+Integrated code-checking as a top-level submodule to provide shared linting
+and check scripts across the repository. Bootstraps baseline workflows,
+pre-commit hooks configuration, and IDE settings.
+
+Consumer integration:
+- Added .github/workflows with code-checking checks
+- Configured pre-commit hooks to use code-checking entrypoints
+- Seeded baseline configuration files (.yamllint, cspell.config.yaml, etc.)
+- Updated README.md with code-checking managed section
+```
+
 To skip README updates for a specific run:
 
 ```bash
@@ -124,7 +141,8 @@ To skip README updates for a specific run:
 ```
 
 For an initial consumer-repo integration commit after running
-`sync-consumer`, stage and review these files:
+`sync-consumer`, stage all of these files together and commit with a proper
+commit message following the site standards:
 
 - `.github/workflows/` (may need to add newly created files instead)
 - `.gitignore` (if seeded)
@@ -135,19 +153,35 @@ For an initial consumer-repo integration commit after running
 - `.yamllint` (if seeded)
 - `vscode-project-words.txt` (if seeded)
 
+The `code_checking` submodule directory itself should also be staged:
+
+- `code_checking/`
+
 The `code_checking` submodule was previously added. Changes inside that
 directory are not required for this integration commit.
 
+Example staging commands:
+
 ```bash
-git add .github/workflows/     # May need to add newly added files instead.
-git add .gitignore             # seeded if missing
+git add .github/workflows/
+git add .gitignore
 git add .gitmodules
-git add .pre-commit-config.yaml   # if setup-dev was run
+git add .pre-commit-config.yaml
+git add .pylint
+git add .yamllint
+git add code_checking
+git add cspell.config.yaml
 git add README.md
-git add cspell.config.yaml     # seeded if missing
-git add .yamllint              # seeded if missing
-git add vscode-project-words.txt  # seeded if missing
+git add vscode-project-words.txt
 ```
+
+Then commit with a proper message:
+
+```bash
+git commit
+```
+
+This will open your editor to write a commit message following the guidelines.
 
 Do not stage `code-checking-ref` for normal integration commits. An
 intentional validation PR may track it temporarily when testing a
