@@ -75,6 +75,9 @@ contributors.
 Local group policy is stricter: require `Signed-off-by:` for all commits,
 including employee-authored commits.
 
+This repository enforces `Signed-off-by:` trailers on pull requests through the
+`DCO / Signed-off-by` required status check.
+
 ## References
 
 For broader background, see the Git Book section on commit guidelines:

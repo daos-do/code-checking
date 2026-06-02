@@ -12,8 +12,12 @@ merge protections used here.
 
 ### Overview
 
-The `basic-source-checks` job from the `checks.yml` workflow is configured as a
-required status check. This consolidates all code quality gates:
+The following jobs are configured as required status checks:
+
+- `Basic Source checks` from `checks.yml`
+- `DCO / Signed-off-by` from `dco-signoff.yml`
+
+`Basic Source checks` consolidates code quality gates:
 
 - `code-checking-ref` guard — blocks accidental commits of local overrides
 - Executable mode verification — ensures scripts have correct git index mode
@@ -21,7 +25,7 @@ required status check. This consolidates all code quality gates:
   (shellcheck, etc.)
 
 This consolidation avoids coupling branch protection rules to per-linter checks.
-All rules are enforced in a single, stable status check.
+The separate DCO check enforces `Signed-off-by:` commit trailer policy.
 
 ### Setup (GitHub Web UI)
 
@@ -47,7 +51,9 @@ This section describes the underlying structure; exact interface paths may vary.
 3. Under Branch targeting criteria, use `Default`.
 4. Enable these branch rules:
    - **Restrict deletions**
-   - **Require signed commits**
+   - **Require signed commits** (optional)
+      - Enable only when all contributors are set up for verified commit
+        signing (GPG/SSH/S/MIME).
    - **Require a pull request before merging**
        - **Required approvals**: 1
        - **Dismiss stale pull request approvals when new commits are pushed**
@@ -56,7 +62,9 @@ This section describes the underlying structure; exact interface paths may vary.
        - **Allowed merge methods**: disable merge commits; allow squash and
          rebase merges
    - **Require status checks to pass**
-      - **Status checks that are required**: `Basic Source checks`
+         - **Status checks that are required**:
+            - `Basic Source checks`
+            - `DCO / Signed-off-by`
       - GitHub does not make this selectable until the workflow exists on the
         default `main` branch.
    - **Block force pushes**
@@ -66,8 +74,9 @@ This section describes the underlying structure; exact interface paths may vary.
 Once configured, attempts to merge a PR will fail with:
 
 - "`Basic Source checks` – required check"
+- "`DCO / Signed-off-by` - required check"
 
-if any of the check steps fail (guard, executable modes, or linters).
+if any of the check steps fail.
 
 ### Testing the Configuration
 

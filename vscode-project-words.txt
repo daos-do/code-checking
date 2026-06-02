@@ -17,9 +17,11 @@ isort
 LASTEXITCODE
 longpaths
 makefiles
+mapfile
 MSYSTEM
 nicolasvuillamy
 nonblank
+pipefail
 Pipenv
 pyenv
 pylint
