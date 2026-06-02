@@ -1,0 +1,52 @@
+# Copyright 2026 Hewlett Packard Enterprise Development LP
+---
+name: dco-signoff
+
+'on':
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco-signoff-check:
+    name: DCO / Signed-off-by
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Verify Signed-off-by trailers
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t commits < <(git rev-list --reverse "${BASE_SHA}..${HEAD_SHA}")
+
+          if [[ ${#commits[@]} -eq 0 ]]; then
+            echo "[dco] no commits found in PR range"
+            exit 0
+          fi
+
+          missing=0
+          for commit in "${commits[@]}"; do
+            trailers="$(git log -1 --pretty=%B "${commit}" | git interpret-trailers --parse)"
+            if ! grep -qi '^signed-off-by:' <<< "${trailers}"; then
+              subject="$(git log -1 --pretty=%s "${commit}")"
+              echo "::error title=Missing Signed-off-by::${commit}: ${subject}"
+              missing=1
+            fi
+          done
+
+          if [[ ${missing} -ne 0 ]]; then
+            echo "[dco] one or more commits are missing Signed-off-by trailers" >&2
+            echo "[dco] amend commits with: git commit --amend --signoff" >&2
+            echo "[dco] for multiple commits: git rebase -i --signoff <base>" >&2
+            exit 1
+          fi
+
+          echo "[dco] all commits include Signed-off-by trailers"
