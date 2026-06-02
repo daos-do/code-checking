@@ -228,8 +228,8 @@ if [[ "${UPDATE_README}" == true ]]; then
 
 This repository uses the shared \`code_checking\` submodule.
 
-- Framework documentation: [code_checking README](./${SUBMODULE_PATH}/README.md)
-- Integration guide:
+* Framework documentation: [code_checking README](./${SUBMODULE_PATH}/README.md)
+* Integration guide:
   [code_checking integration](./${SUBMODULE_PATH}/docs/integration.md)
 
 ${END_MARKER}"
@@ -304,6 +304,16 @@ if [[ ! -f "${TARGET_ROOT}/vscode-project-words.txt" ]]; then
       "from code_checking baseline"
   else
     echo "[sync-consumer] baseline not found: ${CSPELL_WORDS_BASELINE}" >&2
+  fi
+fi
+
+if [[ ! -f "${TARGET_ROOT}/.flake8" ]]; then
+  FLAKE8_BASELINE="${LIB_ROOT}/.flake8"
+  if [[ -f "${FLAKE8_BASELINE}" ]]; then
+    cp "${FLAKE8_BASELINE}" "${TARGET_ROOT}/.flake8"
+    echo "[sync-consumer] created .flake8 from code_checking baseline"
+  else
+    echo "[sync-consumer] baseline not found: ${FLAKE8_BASELINE}" >&2
   fi
 fi
 

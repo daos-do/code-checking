@@ -11,6 +11,7 @@ filemode
 gitfs
 gitlink
 groovylint
+gsub
 gvars
 isort
 LASTEXITCODE
