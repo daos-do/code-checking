@@ -108,7 +108,7 @@ pwsh -File .\code_checking\bin\sync-consumer.ps1
 ```
 
 This command syncs the `code_checking` ref, writes the recommended GitHub
-workflow (`pull_request` trigger only, to avoid duplicate `push` + PR runs),
+workflows (`pull_request` trigger only, to avoid duplicate `push` + PR runs),
 bootstraps or refreshes pre-commit hooks, and updates the consumer `README.md`
 managed section. It also seeds baseline `.gitignore`,
 `cspell.config.yaml`, `.yamllint`, and `vscode-project-words.txt` in the
@@ -187,7 +187,7 @@ Do not stage `code-checking-ref` for normal integration commits. An
 intentional validation PR may track it temporarily when testing a
 `code_checking` PR ref.
 
-To install or update only the recommended GitHub workflow without a full
+To install or update only the recommended GitHub workflows without a full
 submodule sync, run:
 
 Linux/macOS:
@@ -203,7 +203,7 @@ bash .\code_checking\bin\setup-github-workflow.sh --apply
 ```
 
 This keeps workflow ownership in the consumer repo while providing a shared
-script to sync the recommended workflow after submodule add/update.
+script to sync the recommended workflows after submodule add/update.
 
 Shared linter entrypoints are available at `bin/run-linters.sh` and
 `bin/run-linters.ps1`.

@@ -41,7 +41,7 @@ pwsh -File .\code_checking\bin\sync-consumer.ps1 -SkipReadme
 
 See [README.md](../README.md) for details on what `sync-consumer` does.
 
-Optionally, you can manually sync or validate the recommended GitHub workflow
+Optionally, you can manually sync or validate the recommended GitHub workflows
 (see [README.md](../README.md) for details on `setup-github-workflow.sh`).
 
 ## Initial Consumer Commit
@@ -117,17 +117,17 @@ commits; you need to fetch and hard-reset.
   commit it. Keep the submodule pointer at the commit already recorded in
   the consumer PR.
 
-1. If the code_checking PR changed linter/tool requirements, regenerate the
-  consumer workflow.
+1. If the code_checking PR changed linter/tool requirements or branch policy
+  checks, regenerate consumer workflows.
 
   ```bash
   ./code_checking/bin/setup-github-workflow.sh --apply
   ```
 
-1. Stage and commit only the changed workflow file.
+1. Stage and commit only changed workflow files.
 
   ```bash
-  git add .github/workflows/basic-source-checks.yml
+  git add .github/workflows/
   git commit --amend --no-verify
   ```
 
