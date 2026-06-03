@@ -4,7 +4,6 @@ set -euo pipefail
 
 TARGET_ROOT="$(pwd)"
 SUBMODULE_PATH="code_checking"
-WORKFLOW_RELATIVE_PATH=".github/workflows/basic-source-checks.yml"
 MODE="check"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -14,8 +13,9 @@ escape_sed_replacement() {
 
 render_workflow_yaml() {
   local code_checking_path="$1"
+  local template_name="$2"
   local template_path="${SCRIPT_DIR}/../checks/workflow_d/"
-  template_path+="basic-source-checks.template.yml"
+  template_path+="${template_name}"
 
   if [[ ! -f "${template_path}" ]]; then
     printf '%s\n' "[setup-github-workflow] missing template:" \
@@ -34,15 +34,14 @@ usage() {
 Usage: setup-github-workflow.sh [--target-root PATH] \
                                 [--submodule-path PATH] [--apply]
 
-Checks or writes the recommended GitHub workflow that runs shared linters from
-this repository when used as a submodule.
+Checks or writes the recommended GitHub workflows for consumer repositories.
 
 Defaults:
 - target root: current directory
 - submodule path: code_checking
 - mode: check (non-mutating)
 
-Use --apply to write/update the workflow file.
+Use --apply to write/update workflow files.
 EOF
 }
 
@@ -73,31 +72,48 @@ while [[ $# -gt 0 ]]; do
 done
 
 TARGET_ROOT="$(cd "${TARGET_ROOT}" && pwd)"
-WORKFLOW_PATH="${TARGET_ROOT}/${WORKFLOW_RELATIVE_PATH}"
-TMP_EXPECTED="$(mktemp)"
-trap 'rm -f "${TMP_EXPECTED}"' EXIT
-render_workflow_yaml "${SUBMODULE_PATH}" > "${TMP_EXPECTED}"
+
+WORKFLOW_TARGETS=(
+  ".github/workflows/basic-source-checks.yml:basic-source-checks.template.yml"
+  ".github/workflows/dco-signoff.yml:dco-signoff.template.yml"
+)
+
+for workflow_target in "${WORKFLOW_TARGETS[@]}"; do
+  workflow_relative_path="${workflow_target%%:*}"
+  template_name="${workflow_target#*:}"
+  workflow_path="${TARGET_ROOT}/${workflow_relative_path}"
+  tmp_expected="$(mktemp)"
+
+  render_workflow_yaml "${SUBMODULE_PATH}" "${template_name}" > "${tmp_expected}"
+
+  if [[ "${MODE}" == "check" ]]; then
+    if [[ ! -f "${workflow_path}" ]]; then
+      printf '%s\n' "[setup-github-workflow] missing workflow:" \
+        "${workflow_relative_path}" >&2
+      printf '%s\n' "[setup-github-workflow] run with --apply to create it" >&2
+      rm -f "${tmp_expected}"
+      exit 1
+    fi
+
+    if ! cmp -s "${workflow_path}" "${tmp_expected}"; then
+      printf '%s\n' "[setup-github-workflow] workflow differs from" \
+        "recommended content" >&2
+      printf '%s\n' "[setup-github-workflow] file: ${workflow_relative_path}" >&2
+      printf '%s\n' "[setup-github-workflow] run with --apply to update it" >&2
+      rm -f "${tmp_expected}"
+      exit 1
+    fi
+
+    rm -f "${tmp_expected}"
+    continue
+  fi
+
+  mkdir -p "$(dirname "${workflow_path}")"
+  cp "${tmp_expected}" "${workflow_path}"
+  rm -f "${tmp_expected}"
+  printf '%s\n' "[setup-github-workflow] wrote ${workflow_relative_path}"
+done
 
 if [[ "${MODE}" == "check" ]]; then
-  if [[ ! -f "${WORKFLOW_PATH}" ]]; then
-    printf '%s\n' "[setup-github-workflow] missing workflow:" \
-      "${WORKFLOW_RELATIVE_PATH}" >&2
-    printf '%s\n' "[setup-github-workflow] run with --apply to create it" >&2
-    exit 1
-  fi
-
-  if ! cmp -s "${WORKFLOW_PATH}" "${TMP_EXPECTED}"; then
-    printf '%s\n' "[setup-github-workflow] workflow differs from" \
-      "recommended content" >&2
-    printf '%s\n' "[setup-github-workflow] file: ${WORKFLOW_RELATIVE_PATH}" >&2
-    printf '%s\n' "[setup-github-workflow] run with --apply to update it" >&2
-    exit 1
-  fi
-
-  printf '%s\n' "[setup-github-workflow] workflow is up to date"
-  exit 0
+  printf '%s\n' "[setup-github-workflow] workflows are up to date"
 fi
-
-mkdir -p "$(dirname "${WORKFLOW_PATH}")"
-cp "${TMP_EXPECTED}" "${WORKFLOW_PATH}"
-printf '%s\n' "[setup-github-workflow] wrote ${WORKFLOW_RELATIVE_PATH}"
