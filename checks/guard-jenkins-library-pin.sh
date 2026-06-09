@@ -58,7 +58,7 @@ if [[ ${#JENKINS_FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
-library_regex='@Library[[:space:]]*[(]'
+library_regex='@Library[[:space:]]*\('
 
 guard_failed=0
 for rel_path in "${JENKINS_FILES[@]}"; do
