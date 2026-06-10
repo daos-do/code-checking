@@ -4,14 +4,15 @@ set -euo pipefail
 
 # Unit tests for checks/guard-jenkins-library-pin.sh
 #
-# SRE-3850: validates the awk regex portability fix for @Library pattern
-# matching.  Each case builds a minimal temporary git repository with a
-# fixture Jenkinsfile, runs the guard, and verifies:
+# Validates the awk regex compatibility fix for @Library pattern matching
+# to allow developers to run this script locally on their system of choice.
+# Each case builds a minimal temporary git repository with a fixture
+# Jenkinsfile, runs the guard, and verifies:
 #   - expected exit code
 #   - expected stdout/stderr content
-#   - absence of the SRE-3850 awk regression (warning/fatal on stderr)
+#   - absence of awk regexp regression warnings/failures on stderr
 #
-# Usage: bash tests/guard-jenkins-library-pin-test.sh
+# Usage: ./tests/guard-jenkins-library-pin-test.sh
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GUARD="${REPO_ROOT}/checks/guard-jenkins-library-pin.sh"
@@ -22,7 +23,9 @@ fail_count=0
 WORK_DIR=""
 cleanup_all() {
   if [[ -n "${WORK_DIR}" ]]; then
-    # git writes object files read-only; restore write permission before removal.
+    # Some git-created paths can be non-writable (files and/or dirs,
+    # platform-dependent); make the tree writable so recursive cleanup is
+    # reliable across environments.
     chmod -R u+w "${WORK_DIR}" 2>/dev/null || true
     rm -rf "${WORK_DIR}" 2>/dev/null || true
   fi
@@ -58,8 +61,10 @@ commit_file() {
 }
 
 # run_case NAME WORKDIR EXPECTED_EXIT [STDOUT_SUBSTR] [STDERR_SUBSTR]
-# Runs the guard and reports pass/fail.  Always checks for the SRE-3850
-# awk portability regression regardless of other assertions.
+# Runs the guard and reports pass/fail.  Always checks for awk portability
+# regression signatures regardless of other assertions. This is a targeted
+# parser-diagnostic guard and is not intended as a blanket pattern for every
+# test assertion.
 run_case() {
   local name="$1"
   local workdir="$2"
@@ -100,11 +105,11 @@ run_case() {
     ok=0
   fi
 
-  # --- SRE-3850 regression guard: no awk warning/fatal on stderr ---
+  # --- Regression guard: no awk warning/fatal on stderr ---
   if grep -qE \
        'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
        "${err_file}" 2>/dev/null; then
-    echo "  [${name}] SRE-3850 awk regexp regression detected:" >&2
+    echo "  [${name}] awk regexp regression detected:" >&2
     grep -E 'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
       "${err_file}" >&2
     ok=0
@@ -138,12 +143,7 @@ run_case() {
   d="${WORK_DIR}/case_clean"
   make_repo "${d}"
   cat > "${d}/Jenkinsfile" <<'GROOVY'
-pipeline {
-  agent any
-  stages {
-    stage('build') { steps { sh 'make' } }
-  }
-}
+// clean fixture: no active @Library reference
 GROOVY
   commit_file "${d}" Jenkinsfile
 
@@ -154,20 +154,12 @@ GROOVY
 
 # ---------------------------------------------------------------------------
 # Case 3 — active @Library reference: guard exits 1, reports blocked
-# This is the primary SRE-3850 regression case; the awk regex must not
-# crash before it has a chance to detect the pattern.
 # ---------------------------------------------------------------------------
 {
   d="${WORK_DIR}/case_active_library"
   make_repo "${d}"
   cat > "${d}/Jenkinsfile" <<'GROOVY'
 @Library("my-shared-lib") _
-pipeline {
-  agent any
-  stages {
-    stage('build') { steps { sh 'make' } }
-  }
-}
 GROOVY
   commit_file "${d}" Jenkinsfile
 
@@ -185,12 +177,6 @@ GROOVY
   make_repo "${d}"
   cat > "${d}/Jenkinsfile" <<'GROOVY'
 // @Library("my-shared-lib") _
-pipeline {
-  agent any
-  stages {
-    stage('build') { steps { sh 'make' } }
-  }
-}
 GROOVY
   commit_file "${d}" Jenkinsfile
 
@@ -209,12 +195,6 @@ GROOVY
 /*
  * Example usage: @Library("my-shared-lib") _
  */
-pipeline {
-  agent any
-  stages {
-    stage('build') { steps { sh 'make' } }
-  }
-}
 GROOVY
   commit_file "${d}" Jenkinsfile
 
@@ -225,16 +205,14 @@ GROOVY
 
 # ---------------------------------------------------------------------------
 # Case 6 — @Library with whitespace before paren (spacing variant): blocked
-# Validates that [[:space:]]* in the pattern still matches after the portability fix.
+# Validates that [[:space:]]* in the pattern still matches after the
+# compatibility fix.
 # ---------------------------------------------------------------------------
 {
   d="${WORK_DIR}/case_spaced_paren"
   make_repo "${d}"
   cat > "${d}/Jenkinsfile" <<'GROOVY'
 @Library  ("my-shared-lib") _
-pipeline {
-  agent any
-}
 GROOVY
   commit_file "${d}" Jenkinsfile
 
@@ -253,7 +231,6 @@ GROOVY
   mkdir -p "${d}/jobs"
   cat > "${d}/jobs/Jenkinsfile" <<'GROOVY'
 @Library("my-shared-lib") _
-pipeline { agent any }
 GROOVY
   commit_file "${d}" jobs/Jenkinsfile
 
