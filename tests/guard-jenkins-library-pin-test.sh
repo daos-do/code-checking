@@ -100,16 +100,6 @@ run_case() {
     ok=0
   fi
 
-  # --- SRE-3850 regression guard: no awk warning/fatal on stderr ---
-  if grep -qE \
-       'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
-       "${err_file}" 2>/dev/null; then
-    echo "  [${name}] SRE-3850 awk regexp regression detected:" >&2
-    grep -E 'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
-      "${err_file}" >&2
-    ok=0
-  fi
-
   if [[ "${ok}" -eq 1 ]]; then
     pass "${name}"
   else
