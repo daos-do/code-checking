@@ -23,6 +23,9 @@ jobs:
       - name: Block tracked code-checking-ref
         run: ./checks/guard-code-checking-ref.sh --target-root .
 
+      - name: Unit test Jenkins @Library guard (SRE-3850)
+        run: bash ./tests/guard-jenkins-library-pin-test.sh
+
       - name: Block active Jenkins @Library reference
         run: ./checks/guard-jenkins-library-pin.sh --target-root .
 
