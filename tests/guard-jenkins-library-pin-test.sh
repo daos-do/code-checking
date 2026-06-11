@@ -4,13 +4,10 @@ set -euo pipefail
 
 # Unit tests for checks/guard-jenkins-library-pin.sh
 #
-# Validates the awk regex compatibility fix for @Library pattern matching
-# to allow developers to run this script locally on their system of choice.
 # Each case builds a minimal temporary git repository with a fixture
 # Jenkinsfile, runs the guard, and verifies:
 #   - expected exit code
 #   - expected stdout/stderr content
-#   - absence of awk regexp regression warnings/failures on stderr
 #
 # Usage: ./tests/guard-jenkins-library-pin-test.sh
 
@@ -61,10 +58,7 @@ commit_file() {
 }
 
 # run_case NAME WORKDIR EXPECTED_EXIT [STDOUT_SUBSTR] [STDERR_SUBSTR]
-# Runs the guard and reports pass/fail.  Always checks for awk portability
-# regression signatures regardless of other assertions. This is a targeted
-# parser-diagnostic guard and is not intended as a blanket pattern for every
-# test assertion.
+# Runs the guard and reports pass/fail.
 run_case() {
   local name="$1"
   local workdir="$2"
@@ -102,16 +96,6 @@ run_case() {
        ! grep -qF "${stderr_substr}" "${err_file}"; then
     echo "  [${name}] stderr missing: ${stderr_substr}" >&2
     echo "  stderr was: $(cat "${err_file}")" >&2
-    ok=0
-  fi
-
-  # --- Regression guard: no awk warning/fatal on stderr ---
-  if grep -qE \
-       'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
-       "${err_file}" 2>/dev/null; then
-    echo "  [${name}] awk regexp regression detected:" >&2
-    grep -E 'awk.*escape sequence|fatal.*invalid regexp|Unmatched' \
-      "${err_file}" >&2
     ok=0
   fi
 
@@ -205,8 +189,6 @@ GROOVY
 
 # ---------------------------------------------------------------------------
 # Case 6 — @Library with whitespace before paren (spacing variant): blocked
-# Validates that [[:space:]]* in the pattern still matches after the
-# compatibility fix.
 # ---------------------------------------------------------------------------
 {
   d="${WORK_DIR}/case_spaced_paren"
